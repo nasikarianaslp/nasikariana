@@ -686,6 +686,20 @@ $('coSend').addEventListener('click', function(){
   msg += 'Total: ' + rupiah(cartTotal());
   if(catatan) msg += '\n\nCatatan tambahan: ' + catatan;
 
+  /* simpan pesanan ke database agar masuk ke panel admin (Pesanan via WhatsApp) */
+  if(sb){
+    var pesanan = {
+      id: 'p' + Date.now() + Math.random().toString(36).slice(2,6),
+      nama: nama,
+      alamat: alamat,
+      items: cart.map(function(it){ return {nama:it.nama, qty:it.qty, harga:it.harga, note:it.note||''}; }),
+      total: cartTotal(),
+      catatan: catatan,
+      status: 'baru'
+    };
+    sb.from('pesanan').insert(pesanan).then(function(r){ if(r.error) console.warn('Simpan pesanan:', r.error.message); });
+  }
+
   window.open(waLink(msg), '_blank');
 });
 
