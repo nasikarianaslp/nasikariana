@@ -1137,6 +1137,7 @@ const KEY='toko_menu_v1';
 let menus=[];
 let editingId=null;
 let currentImg='';        // dataURL atau URL foto terpilih di modal
+let currentFile=null;     // File asli untuk diunggah ke Supabase Storage
 let currentPhotoMode='upload';
 
 function load(){
@@ -1167,6 +1168,16 @@ async function sbLoadMenus(){
   const r = await sb.from('menu').select('*').order('id',{ascending:false});
   if(r.error){ console.warn('Supabase muat:', r.error.message); return; }
   if(Array.isArray(r.data)){ menus = r.data; save(); render(); }
+}
+/* Unggah foto ke Supabase Storage (bucket 'menu-foto'), kembalikan URL publik */
+async function sbUploadFoto(file){
+  if(!sb || !file) return null;
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g,'') || 'jpg';
+  const path = 'menu/' + Date.now() + '-' + Math.random().toString(36).slice(2,8) + '.' + ext;
+  const up = await sb.storage.from('menu-foto').upload(path, file, {cacheControl:'3600', upsert:false});
+  if(up.error){ console.warn('Upload foto:', up.error.message); return null; }
+  const pub = sb.storage.from('menu-foto').getPublicUrl(path);
+  return pub.data ? pub.data.publicUrl : null;
 }
 
 const KAT_LABEL={utama:'Menu Utama',sore:'Menu Sore',minuman:'Minuman'};
@@ -1315,6 +1326,7 @@ function showPreview(src){
 }
 function resetPreview(){
   currentImg='';
+  currentFile=null;
   preview.innerHTML=`<div class="ph-ic">&#128444;</div><div class="ph-tx">Preview gambar</div>`;
   dropzone.classList.remove('hasfile');
   dzTitle.textContent='Klik untuk pilih foto';
@@ -1326,11 +1338,12 @@ fileInput.addEventListener('change',()=>{
   const f=fileInput.files[0];
   if(!f) return;
   if(f.size>5*1024*1024){ toast('Ukuran maksimal 5 MB'); return; }
+  currentFile=f;
   const r=new FileReader();
   r.onload=()=>showPreview(r.result);
   r.readAsDataURL(f);
 });
-inUrl.addEventListener('input',()=>{ if(inUrl.value.trim()) showPreview(inUrl.value.trim()); else resetPreview(); });
+inUrl.addEventListener('input',()=>{ currentFile=null; if(inUrl.value.trim()) showPreview(inUrl.value.trim()); else resetPreview(); });
 
 function openModal(id){
   editingId=id||null;
@@ -1367,12 +1380,25 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&modal.classList.co
 
 /* ---------- Validasi + simpan ---------- */
 function clearErrors(){ document.getElementById('fName').classList.remove('invalid'); document.getElementById('fPrice').classList.remove('invalid'); }
-document.getElementById('btnSave').addEventListener('click',()=>{
+document.getElementById('btnSave').addEventListener('click',async ()=>{
   clearErrors();
   let ok=true;
   if(!inName.value.trim()){ document.getElementById('fName').classList.add('invalid'); ok=false; }
   if(inPrice.value===''||Number(inPrice.value)<0||isNaN(Number(inPrice.value))){ document.getElementById('fPrice').classList.add('invalid'); ok=false; }
   if(!ok) return;
+
+  const btn=document.getElementById('btnSave');
+  const labelAsli=btn.textContent;
+
+  // Jika ada foto baru dari galeri & Supabase aktif -> unggah dulu ke Storage
+  let imgVal=currentImg;
+  if(currentFile && sb){
+    btn.disabled=true; btn.textContent='Mengunggah foto…';
+    const url=await sbUploadFoto(currentFile);
+    btn.disabled=false; btn.textContent=labelAsli;
+    if(url){ imgVal=url; }
+    else { toast('Gagal unggah foto, memakai foto lokal'); }
+  }
 
   const data={
     nama:inName.value.trim(),
@@ -1380,7 +1406,7 @@ document.getElementById('btnSave').addEventListener('click',()=>{
     kategori:inKat.value,
     status:inStatus.value,
     best:inBest.checked,
-    img:currentImg
+    img:imgVal
   };
 
   if(editingId){
