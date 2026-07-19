@@ -400,17 +400,6 @@
         <label for="coNama">Nama Pelanggan *</label>
         <input type="text" id="coNama" placeholder="Nama lengkap penerima">
       </div>
-      <div class="co-field">
-        <label for="coHp">No. WhatsApp / HP</label>
-        <input type="tel" id="coHp" inputmode="numeric" placeholder="cth. 0812xxxxxxx">
-      </div>
-      <div class="co-field">
-        <label>Metode</label>
-        <div class="co-method">
-          <button type="button" id="coAntar" class="on">&#128757; Antar ke alamat</button>
-          <button type="button" id="coAmbil">&#127978; Ambil di tempat</button>
-        </div>
-      </div>
       <div class="co-field" id="coAlamatField">
         <label for="coAlamat">Alamat Rumah *</label>
         <textarea id="coAlamat" rows="3" placeholder="Nama jalan, no. rumah, RT/RW, patokan..."></textarea>
@@ -657,13 +646,6 @@ $('cartClose').addEventListener('click', closeCart);
 $('cartOverlay').addEventListener('click', closeCart);
 
 /* ===== Tahap 2: Data Pengiriman ===== */
-var coMethod = 'antar';
-function setMethod(m){
-  coMethod = m;
-  $('coAntar').classList.toggle('on', m === 'antar');
-  $('coAmbil').classList.toggle('on', m === 'ambil');
-  $('coAlamatField').style.display = (m === 'antar') ? '' : 'none';
-}
 function openCheckout(){
   if(cart.length === 0) return;
   var sum = cart.map(function(it){
@@ -678,20 +660,17 @@ function openCheckout(){
 $('cartOrder').addEventListener('click', openCheckout);
 $('checkoutBack').addEventListener('click', backToCart);
 $('checkoutClose').addEventListener('click', closeCart);
-$('coAntar').addEventListener('click', function(){ setMethod('antar'); });
-$('coAmbil').addEventListener('click', function(){ setMethod('ambil'); });
 
 /* kirim seluruh pesanan + data pengiriman via WhatsApp */
 $('coSend').addEventListener('click', function(){
   if(cart.length === 0) return;
   var nama = $('coNama').value.trim();
-  var hp = $('coHp').value.trim();
   var alamat = $('coAlamat').value.trim();
   var catatan = $('coCatatan').value.trim();
   var err = $('coErr');
   err.classList.remove('show');
   if(!nama){ err.textContent = 'Nama pelanggan wajib diisi.'; err.classList.add('show'); return; }
-  if(coMethod === 'antar' && !alamat){ err.textContent = 'Alamat rumah wajib diisi untuk pengantaran.'; err.classList.add('show'); return; }
+  if(!alamat){ err.textContent = 'Alamat rumah wajib diisi untuk pengantaran.'; err.classList.add('show'); return; }
 
   var lines = cart.map(function(it, i){
     var l = (i+1) + '. ' + it.nama + ' x' + it.qty + ' - ' + rupiah(it.harga * it.qty);
@@ -702,9 +681,7 @@ $('coSend').addEventListener('click', function(){
   var msg = 'Halo ' + namaLengkap + ', saya mau pesan:\n\n';
   msg += '*DATA PEMESAN*\n';
   msg += 'Nama: ' + nama + '\n';
-  if(hp) msg += 'No. HP: ' + hp + '\n';
-  msg += 'Metode: ' + (coMethod === 'antar' ? 'Antar ke alamat' : 'Ambil di tempat') + '\n';
-  if(coMethod === 'antar') msg += 'Alamat: ' + alamat + '\n';
+  msg += 'Alamat: ' + alamat + '\n';
   msg += '\n*PESANAN*\n' + lines + '\n\n';
   msg += 'Total: ' + rupiah(cartTotal());
   if(catatan) msg += '\n\nCatatan tambahan: ' + catatan;
