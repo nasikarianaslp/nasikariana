@@ -588,6 +588,38 @@
   .set-save{border:none;border-radius:13px;padding:13px 28px;font-size:14px;font-weight:800;color:#fff;cursor:pointer;background:linear-gradient(135deg,var(--red-600),var(--red-700));box-shadow:var(--shadow-md);margin-top:6px}
   .set-save:hover{filter:brightness(1.08)}
 
+  /* ===== PESANAN VIA WHATSAPP ===== */
+  .wa-head{padding:16px 18px;margin-bottom:16px}
+  .wa-head-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .wa-count{font-size:15px;font-weight:800;color:var(--red-700)}
+  .wa-order{background:var(--white);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);padding:16px 18px;margin-bottom:14px}
+  .wa-order.baru{border-left:5px solid #25D366}
+  .wa-order.diproses{border-left:5px solid var(--amber-500)}
+  .wa-order.selesai{border-left:5px solid #1f9e52;opacity:.85}
+  .wa-o-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .wa-o-name{font-size:15px;font-weight:800;color:var(--ink)}
+  .wa-o-time{font-size:12px;color:var(--muted);margin-top:2px}
+  .wa-badge{font-size:11px;font-weight:800;padding:4px 11px;border-radius:20px}
+  .wa-badge.baru{background:#e3f7e8;color:#1f8f4c}
+  .wa-badge.diproses{background:#fbeecd;color:#a97b12}
+  .wa-badge.selesai{background:#e2eefb;color:#2563a8}
+  .wa-o-addr{font-size:13px;color:#5c4a42;margin-top:8px;display:flex;gap:6px;align-items:flex-start}
+  .wa-o-items{margin-top:12px;border-top:1px dashed var(--line);padding-top:10px}
+  .wa-o-item{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;padding:3px 0}
+  .wa-o-item .qn{color:var(--red-700);font-weight:700}
+  .wa-o-item .note{display:block;font-size:12px;color:var(--muted);margin-top:1px}
+  .wa-o-total{display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-weight:800}
+  .wa-o-total span:last-child{color:var(--red-700);font-size:16px}
+  .wa-o-catatan{font-size:12.5px;color:#8a6f4d;background:var(--yellow-50);border-radius:10px;padding:8px 12px;margin-top:10px}
+  .wa-o-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+  .wa-btn{border:none;border-radius:11px;padding:9px 14px;font-size:12.5px;font-weight:700;cursor:pointer;transition:.15s}
+  .wa-btn-proses{background:var(--amber-400);color:#5a3300}
+  .wa-btn-selesai{background:linear-gradient(135deg,#37c26b,#1f9e52);color:#fff}
+  .wa-btn-del{background:#fdecec;color:var(--red-600);border:1px solid #f7cccc}
+  .wa-btn:hover{filter:brightness(1.05)}
+  .nav-item .nav-dot{margin-left:auto;background:#25D366;color:#fff;font-size:10.5px;font-weight:800;min-width:18px;height:18px;border-radius:10px;display:none;align-items:center;justify-content:center;padding:0 5px}
+  .nav-item .nav-dot.show{display:flex}
+
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -687,7 +719,7 @@
         <span class="nv-icon">&#127869;</span><span class="nv-text">Makan di Tempat</span>
       </button>
       <button class="nav-item" data-page="wa" data-title="Pesanan via WhatsApp" data-desc="Pesanan yang masuk lewat WhatsApp">
-        <span class="nv-icon"><svg width="17" height="17" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0 auto"><path fill="#25D366" d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.945C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 018.413 3.488 11.824 11.824 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24z"/><path fill="#fff" d="M12.05 21.785h-.005a9.87 9.87 0 01-5.03-1.378l-.36-.214-3.742.981.999-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.002-5.45 4.436-9.884 9.888-9.884a9.82 9.82 0 016.988 2.898 9.825 9.825 0 012.892 6.994c-.003 5.45-4.437 9.885-9.885 9.885m5.426-7.403c-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.148-.669.15-.198.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/></svg></span><span class="nv-text">Pesanan via WhatsApp</span>
+        <span class="nv-icon"><svg width="17" height="17" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0 auto"><path fill="#25D366" d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.945C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 018.413 3.488 11.824 11.824 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24z"/><path fill="#fff" d="M12.05 21.785h-.005a9.87 9.87 0 01-5.03-1.378l-.36-.214-3.742.981.999-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.002-5.45 4.436-9.884 9.888-9.884a9.82 9.82 0 016.988 2.898 9.825 9.825 0 012.892 6.994c-.003 5.45-4.437 9.885-9.885 9.885m5.426-7.403c-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.148-.669.15-.198.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/></svg></span><span class="nv-text">Pesanan via WhatsApp</span><span class="nav-dot" id="waNavDot">0</span>
       </button>
       <button class="nav-item" data-page="role" data-title="Manajemen Role" data-desc="Atur peran dan hak akses pengguna">
         <span class="nv-icon">&#128101;</span><span class="nv-text">Manajemen Role</span>
@@ -820,7 +852,20 @@
       </div>
     </section>
     <section class="page" id="page-wa">
-      <div class="content"><div class="empty"><div class="badge"><svg width="36" height="36" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#25D366" d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.945C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 018.413 3.488 11.824 11.824 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24z"/><path fill="#fff" d="M12.05 21.785h-.005a9.87 9.87 0 01-5.03-1.378l-.36-.214-3.742.981.999-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.002-5.45 4.436-9.884 9.888-9.884a9.82 9.82 0 016.988 2.898 9.825 9.825 0 012.892 6.994c-.003 5.45-4.437 9.885-9.885 9.885m5.426-7.403c-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.148-.669.15-.198.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/></svg></div><h3>Belum ada pesanan</h3><p>Halaman Pesanan via WhatsApp akan dikembangkan pada tahap berikutnya.</p></div></div>
+      <div class="panel wa-head">
+        <div class="wa-head-top">
+          <div class="wa-count" id="waCount">0 pesanan masuk</div>
+          <button class="icon-sq" id="waRefresh" title="Muat ulang">&#8635;</button>
+        </div>
+        <div class="seg" data-group="wastatus" id="waFilter">
+          <button class="on" data-val="semua">Semua</button>
+          <button data-val="baru">Baru</button>
+          <button data-val="diproses">Diproses</button>
+          <button data-val="selesai">Selesai</button>
+        </div>
+      </div>
+      <div id="waList"></div>
+      <div class="empty" id="waEmpty"><div class="badge">&#128233;</div><h3>Belum ada pesanan masuk</h3><p>Pesanan yang dikirim pelanggan dari halaman toko akan muncul di sini secara otomatis.</p></div>
     </section>
     <section class="page" id="page-laporan">
       <!-- Periode & Sumber -->
@@ -1954,6 +1999,92 @@ $('kSave').addEventListener('click',()=>{
   toast('PIN diperbarui');
 });
 
+/* ---------- PESANAN VIA WHATSAPP (dari Supabase) ---------- */
+let pesananWA = [];
+let waFilterStatus = 'semua';
+const WA_STATUS_LABEL = {baru:'Baru', diproses:'Diproses', selesai:'Selesai'};
+
+function waLoad(){
+  if(!sb){ waRender(); return; }
+  sb.from('pesanan').select('*').order('created_at',{ascending:false}).then(r=>{
+    if(r.error){ console.warn('Muat pesanan WA:', r.error.message); return; }
+    if(Array.isArray(r.data)){ pesananWA = r.data; waRender(); }
+  });
+}
+function waSubscribe(){
+  if(!sb) return;
+  sb.channel('pesanan-realtime')
+    .on('postgres_changes', {event:'*', schema:'public', table:'pesanan'}, ()=>waLoad())
+    .subscribe();
+}
+function waTime(ts){
+  const d = ts ? new Date(ts) : new Date();
+  return d.toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+}
+function waRender(){
+  const list = document.getElementById('waList');
+  const empty = document.getElementById('waEmpty');
+  if(!list) return;
+  const baru = pesananWA.filter(p=>(p.status||'baru')==='baru').length;
+  document.getElementById('waCount').textContent = pesananWA.length + ' pesanan masuk';
+  const dot = document.getElementById('waNavDot');
+  if(dot){ dot.textContent = baru; dot.classList.toggle('show', baru>0); }
+
+  const rows = pesananWA.filter(p=> waFilterStatus==='semua' || (p.status||'baru')===waFilterStatus);
+  if(rows.length===0){ list.innerHTML=''; empty.style.display=''; 
+    empty.querySelector('h3').textContent = pesananWA.length===0 ? 'Belum ada pesanan masuk' : 'Tidak ada pesanan pada status ini';
+    return; }
+  empty.style.display='none';
+  list.innerHTML = rows.map(p=>{
+    const st = p.status || 'baru';
+    const items = (p.items||[]).map(it=>{
+      const note = it.note && it.note.trim() ? '<span class="note">Catatan: '+escapeHtml(it.note)+'</span>' : '';
+      return '<div class="wa-o-item"><span>'+escapeHtml(it.nama)+' <span class="qn">\u00D7'+it.qty+'</span>'+note+'</span><span>'+rupiah((it.harga||0)*it.qty)+'</span></div>';
+    }).join('');
+    const catatan = p.catatan && p.catatan.trim() ? '<div class="wa-o-catatan">\uD83D\uDCDD '+escapeHtml(p.catatan)+'</div>' : '';
+    let actions = '';
+    if(st==='baru') actions += '<button class="wa-btn wa-btn-proses" data-proses="'+p.id+'">Proses</button>';
+    if(st!=='selesai') actions += '<button class="wa-btn wa-btn-selesai" data-selesai="'+p.id+'">Tandai Selesai</button>';
+    actions += '<button class="wa-btn wa-btn-del" data-hapus="'+p.id+'">Hapus</button>';
+    return '<div class="wa-order '+st+'">'
+      + '<div class="wa-o-top"><div><div class="wa-o-name">\uD83D\uDC64 '+escapeHtml(p.nama||'-')+'</div><div class="wa-o-time">'+waTime(p.created_at)+'</div></div>'
+      + '<span class="wa-badge '+st+'">'+(WA_STATUS_LABEL[st]||st)+'</span></div>'
+      + '<div class="wa-o-addr">\uD83D\uDCCD <span>'+escapeHtml(p.alamat||'-')+'</span></div>'
+      + '<div class="wa-o-items">'+items+'</div>'
+      + '<div class="wa-o-total"><span>Total</span><span>'+rupiah(p.total||0)+'</span></div>'
+      + catatan
+      + '<div class="wa-o-actions">'+actions+'</div>'
+      + '</div>';
+  }).join('');
+}
+function waUpdateStatus(id, status){
+  const p = pesananWA.find(x=>x.id===id); if(p) p.status=status;
+  waRender();
+  if(sb) sb.from('pesanan').update({status}).eq('id',id).then(r=>{ if(r.error) console.warn(r.error.message); });
+}
+document.getElementById('waList').addEventListener('click',e=>{
+  const pr=e.target.closest('[data-proses]'), se=e.target.closest('[data-selesai]'), hp=e.target.closest('[data-hapus]');
+  if(pr){ waUpdateStatus(pr.dataset.proses,'diproses'); }
+  else if(se){ waUpdateStatus(se.dataset.selesai,'selesai'); }
+  else if(hp){
+    askConfirm('Hapus pesanan ini dari daftar?').then(ok=>{
+      if(!ok) return;
+      const id=hp.dataset.hapus;
+      pesananWA = pesananWA.filter(x=>x.id!==id); waRender();
+      if(sb) sb.from('pesanan').delete().eq('id',id).then(r=>{ if(r.error) console.warn(r.error.message); });
+      toast('Pesanan dihapus');
+    });
+  }
+});
+document.querySelectorAll('#waFilter button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('#waFilter button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); waFilterStatus=b.dataset.val; waRender();
+  });
+});
+document.getElementById('waRefresh').addEventListener('click',()=>{ waLoad(); toast('Pesanan dimuat ulang'); });
+document.querySelector('.nav-item[data-page="wa"]').addEventListener('click',waLoad);
+
 /* ---------- Init ---------- */
 loadCreds();
 updateUserChip();
@@ -1965,6 +2096,7 @@ document.getElementById('histDate').value=isoDate(Date.now());
 renderReport(); renderTables(); renderHistory();
 if(loginGet()) hideLogin(); else showLogin();
 sbLoadMenus();   // ambil menu terbaru dari database online (jika Supabase diisi)
+waLoad(); waSubscribe();   // ambil & pantau pesanan WhatsApp masuk (realtime)
 
 </script>
 
