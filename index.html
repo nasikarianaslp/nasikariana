@@ -156,6 +156,7 @@
   @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 
 </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -326,11 +327,38 @@ function applyConfig(){
   document.title = namaLengkap;
 }
 
-/* ===== Menu (dibaca dari data panel admin) ===== */
+/* =======================================================================
+   SUPABASE — DATABASE ONLINE (gunakan URL & key yang SAMA dengan admin)
+   Kalau dikosongkan, halaman membaca dari penyimpanan lokal.
+   ======================================================================= */
+var SUPABASE_URL = 'https://peezhygkajgqitssmkks.supabase.co';   // <-- contoh: https://xxxxxxxx.supabase.co
+var SUPABASE_KEY = 'sb_publishable_D-p1-4LgPfI1Dw7JW7onfg_djiWs1r-';   // <-- anon public key
+/* ===================================================================== */
+var sb = null;
+if(SUPABASE_URL && SUPABASE_KEY && window.supabase){
+  try { sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e){ sb = null; }
+}
+
+/* ===== Menu ===== */
 var menus = [];
 function loadMenus(){
   try { var raw = localStorage.getItem('toko_menu_v1'); menus = raw ? JSON.parse(raw) : []; }
   catch(e){ menus = []; }
+}
+function fetchMenusOnline(){
+  if(!sb) return;
+  sb.from('menu').select('*').order('id',{ascending:false}).then(function(r){
+    if(r.error){ console.warn('Supabase muat:', r.error.message); return; }
+    if(Array.isArray(r.data)){ menus = r.data; renderMenu(); }
+  });
+}
+function loadMenusOnline(){
+  if(!sb) return;
+  fetchMenusOnline();
+  // dengarkan perubahan menu secara realtime -> perbarui otomatis (langganan sekali)
+  sb.channel('menu-realtime')
+    .on('postgres_changes', {event:'*', schema:'public', table:'menu'}, function(){ fetchMenusOnline(); })
+    .subscribe();
 }
 var filterKat = 'semua';
 var grid = $('menuGrid');
@@ -414,9 +442,10 @@ window.addEventListener('storage', function(e){
 
 /* ===== Jalankan ===== */
 applyConfig();
-loadMenus();
+loadMenus();       // tampilkan cepat dari lokal (jika ada)
 updateBuka();
 renderMenu();
+loadMenusOnline(); // lalu ambil dari database online + pantau perubahan realtime
 
 </script>
 </body>
