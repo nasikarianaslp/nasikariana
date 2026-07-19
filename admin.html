@@ -589,6 +589,7 @@
   .set-save:hover{filter:brightness(1.08)}
 
 </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -1146,6 +1147,28 @@ function save(){
   try{ localStorage.setItem(KEY,JSON.stringify(menus)); }catch(e){/* fallback in-memory */}
 }
 
+/* =======================================================================
+   SUPABASE — DATABASE ONLINE (sinkron menu ke semua perangkat)
+   Tempel Project URL & anon public key kamu di 2 baris di bawah.
+   Kalau dikosongkan, aplikasi tetap jalan memakai penyimpanan lokal saja.
+   ======================================================================= */
+const SUPABASE_URL = 'https://peezhygkajgqitssmkks.supabase.co';   // <-- contoh: https://xxxxxxxx.supabase.co
+const SUPABASE_KEY = 'sb_publishable_D-p1-4LgPfI1Dw7JW7onfg_djiWs1r-';   // <-- anon public key (aman ditaruh di sini)
+/* ===================================================================== */
+let sb = null;
+if(SUPABASE_URL && SUPABASE_KEY && window.supabase){
+  try{ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }catch(e){ sb=null; }
+}
+function sbRecord(m){ return {id:m.id, nama:m.nama, harga:m.harga, kategori:m.kategori, status:m.status, best:!!m.best, img:m.img||''}; }
+function sbUpsert(m){ if(!sb) return; sb.from('menu').upsert(sbRecord(m)).then(r=>{ if(r.error) console.warn('Supabase simpan:', r.error.message); }); }
+function sbDelete(id){ if(!sb) return; sb.from('menu').delete().eq('id',id).then(r=>{ if(r.error) console.warn('Supabase hapus:', r.error.message); }); }
+async function sbLoadMenus(){
+  if(!sb) return;
+  const r = await sb.from('menu').select('*').order('id',{ascending:false});
+  if(r.error){ console.warn('Supabase muat:', r.error.message); return; }
+  if(Array.isArray(r.data)){ menus = r.data; save(); render(); }
+}
+
 const KAT_LABEL={utama:'Menu Utama',sore:'Menu Sore',minuman:'Minuman'};
 const rupiah=n=>'Rp '+Number(n).toLocaleString('id-ID');
 
@@ -1229,6 +1252,7 @@ grid.addEventListener('click',e=>{
       askConfirm('Hapus menu "'+m.nama+'"? Tindakan ini tidak bisa dibatalkan.').then(ok=>{
         if(!ok) return;
         menus=menus.filter(x=>x.id!==dl.dataset.del);
+        sbDelete(dl.dataset.del);
         save(); render(); toast('Menu dihapus');
       });
     }
@@ -1362,9 +1386,12 @@ document.getElementById('btnSave').addEventListener('click',()=>{
   if(editingId){
     const i=menus.findIndex(x=>x.id===editingId);
     menus[i]={...menus[i],...data};
+    sbUpsert(menus[i]);
     toast('Menu diperbarui');
   }else{
-    menus.unshift({id:'m'+Date.now(),...data});
+    const rec={id:'m'+Date.now(),...data};
+    menus.unshift(rec);
+    sbUpsert(rec);
     toast('Menu ditambahkan');
   }
   save(); render(); closeModal();
@@ -1911,6 +1938,7 @@ document.getElementById('uUser').value=creds.user;
 document.getElementById('histDate').value=isoDate(Date.now());
 renderReport(); renderTables(); renderHistory();
 if(loginGet()) hideLogin(); else showLogin();
+sbLoadMenus();   // ambil menu terbaru dari database online (jika Supabase diisi)
 
 </script>
 
