@@ -337,6 +337,20 @@
   <div class="wrap footer-bottom">&copy; <span id="yr"></span> <span id="footerNama">Ana Nasi Kari</span> &middot; Semua hak dilindungi</div>
 </footer>
 
+<!-- ===== KERANJANG PESANAN ===== -->
+<div class="cart-overlay" id="cartOverlay"></div>
+<aside class="cart-panel" id="cartPanel" aria-label="Keranjang Pesanan">
+  <div class="cart-head">
+    <div class="cart-title">&#128722; Keranjang Pesanan</div>
+    <button class="cart-x" id="cartClose" aria-label="Tutup">&times;</button>
+  </div>
+  <div class="cart-body" id="cartBody"></div>
+  <div class="cart-foot">
+    <div class="cart-total-row"><span>Total Pembayaran</span><span id="cartTotal">Rp 0</span></div>
+    <button class="cart-order" id="cartOrder" disabled>&#128172; Pesan via WhatsApp</button>
+  </div>
+</aside>
+
 <script>
 /* =======================================================================
    PENGATURAN MUDAH — UBAH DATA TOKO DI SINI SAJA
@@ -613,20 +627,6 @@ renderCart();      // siapkan tampilan keranjang (kosong)
 loadMenusOnline(); // lalu ambil dari database online + pantau perubahan realtime
 
 </script>
-
-<!-- ===== KERANJANG PESANAN ===== -->
-<div class="cart-overlay" id="cartOverlay"></div>
-<aside class="cart-panel" id="cartPanel" aria-label="Keranjang Pesanan">
-  <div class="cart-head">
-    <div class="cart-title">&#128722; Keranjang Pesanan</div>
-    <button class="cart-x" id="cartClose" aria-label="Tutup">&times;</button>
-  </div>
-  <div class="cart-body" id="cartBody"></div>
-  <div class="cart-foot">
-    <div class="cart-total-row"><span>Total Pembayaran</span><span id="cartTotal">Rp 0</span></div>
-    <button class="cart-order" id="cartOrder" disabled>&#128172; Pesan via WhatsApp</button>
-  </div>
-</aside>
 
 </body>
 </html>
