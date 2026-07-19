@@ -229,6 +229,27 @@
   .p-plus:hover{filter:brightness(1.05)}
   .p-qnum{font-weight:800;font-size:14.5px;color:var(--red-700);min-width:60px;text-align:center}
 
+  /* ===== 2 TAHAP: keranjang & data pengiriman ===== */
+  .cart-view{flex:1;display:flex;flex-direction:column;min-height:0}
+  .checkout-head .cart-title{flex:1;text-align:center}
+  .cart-back{background:transparent;border:none;color:#fff;font-size:20px;cursor:pointer;padding:0 6px;border-radius:8px;line-height:1}
+  .cart-back:hover{background:rgba(255,255,255,.15)}
+  .checkout-body{gap:14px}
+  .co-field label{display:block;font-size:12.5px;font-weight:700;color:var(--red-700);margin-bottom:6px}
+  .co-field input,.co-field textarea{width:100%;border:1.5px solid #f2e2b8;background:#fff;border-radius:11px;padding:11px 13px;
+    font-size:13.5px;font-family:inherit;color:var(--ink);outline:none;resize:none;line-height:1.4}
+  .co-field input:focus,.co-field textarea:focus{border-color:var(--amber-400)}
+  .co-field input::placeholder,.co-field textarea::placeholder{color:#c2b0a2}
+  .co-method{display:flex;gap:10px}
+  .co-method button{flex:1;border:1.5px solid #f2e2b8;background:#fff;border-radius:11px;padding:11px 6px;font-size:12.5px;font-weight:700;
+    color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:.15s}
+  .co-method button.on{background:linear-gradient(135deg,var(--red-600),var(--red-700));color:#fff;border-color:transparent}
+  .co-summary{background:var(--yellow-50);border:1px solid #f2e2b8;border-radius:14px;padding:12px 14px}
+  .co-summary h5{font-size:12.5px;font-weight:800;color:var(--red-700);margin-bottom:8px}
+  .co-sum-row{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:3px 0;color:#5c4a42}
+  .co-err{color:var(--red-500);font-size:12.5px;font-weight:700;display:none}
+  .co-err.show{display:block}
+
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -353,15 +374,63 @@
 <!-- ===== KERANJANG PESANAN ===== -->
 <div class="cart-overlay" id="cartOverlay"></div>
 <aside class="cart-panel" id="cartPanel" aria-label="Keranjang Pesanan">
-  <div class="cart-head">
-    <div class="cart-title">&#128722; Keranjang Pesanan</div>
-    <button class="cart-x" id="cartClose" aria-label="Tutup">&times;</button>
+
+  <!-- TAHAP 1: KERANJANG -->
+  <div class="cart-view" id="cartView">
+    <div class="cart-head">
+      <div class="cart-title">&#128722; Keranjang Pesanan</div>
+      <button class="cart-x" id="cartClose" aria-label="Tutup">&times;</button>
+    </div>
+    <div class="cart-body" id="cartBody"></div>
+    <div class="cart-foot">
+      <div class="cart-total-row"><span>Total Pembayaran</span><span id="cartTotal">Rp 0</span></div>
+      <button class="cart-order" id="cartOrder" disabled>Lanjut ke Pengiriman &rarr;</button>
+    </div>
   </div>
-  <div class="cart-body" id="cartBody"></div>
-  <div class="cart-foot">
-    <div class="cart-total-row"><span>Total Pembayaran</span><span id="cartTotal">Rp 0</span></div>
-    <button class="cart-order" id="cartOrder" disabled><svg class="wa-ic" viewBox="0 0 24 24" fill="#fff" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.71.306 1.263.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.885-9.885 9.885M20.52 3.449C18.24 1.245 15.24 0 12.045 0 5.463 0 .104 5.359.101 11.892c0 2.096.549 4.14 1.595 5.945L0 24l6.335-1.652a11.9 11.9 0 005.71 1.454h.006c6.585 0 11.946-5.359 11.949-11.893a11.821 11.821 0 00-3.484-8.436z"/></svg> Pesan via WhatsApp</button>
+
+  <!-- TAHAP 2: DATA PENGIRIMAN -->
+  <div class="cart-view" id="checkoutView" style="display:none">
+    <div class="cart-head checkout-head">
+      <button class="cart-back" id="checkoutBack" aria-label="Kembali">&larr;</button>
+      <div class="cart-title">Data Pengiriman</div>
+      <button class="cart-x" id="checkoutClose" aria-label="Tutup">&times;</button>
+    </div>
+    <div class="cart-body checkout-body">
+      <div class="co-field">
+        <label for="coNama">Nama Pelanggan *</label>
+        <input type="text" id="coNama" placeholder="Nama lengkap penerima">
+      </div>
+      <div class="co-field">
+        <label for="coHp">No. WhatsApp / HP</label>
+        <input type="tel" id="coHp" inputmode="numeric" placeholder="cth. 0812xxxxxxx">
+      </div>
+      <div class="co-field">
+        <label>Metode</label>
+        <div class="co-method">
+          <button type="button" id="coAntar" class="on">&#128757; Antar ke alamat</button>
+          <button type="button" id="coAmbil">&#127978; Ambil di tempat</button>
+        </div>
+      </div>
+      <div class="co-field" id="coAlamatField">
+        <label for="coAlamat">Alamat Rumah *</label>
+        <textarea id="coAlamat" rows="3" placeholder="Nama jalan, no. rumah, RT/RW, patokan..."></textarea>
+      </div>
+      <div class="co-field">
+        <label for="coCatatan">Catatan Tambahan</label>
+        <textarea id="coCatatan" rows="2" placeholder="Opsional (mis. minta antar jam 12)"></textarea>
+      </div>
+      <div class="co-summary">
+        <h5>Ringkasan Pesanan</h5>
+        <div id="coSummary"></div>
+      </div>
+      <div class="co-err" id="coErr"></div>
+    </div>
+    <div class="cart-foot">
+      <div class="cart-total-row"><span>Total Pembayaran</span><span id="coTotal">Rp 0</span></div>
+      <button class="cart-order" id="coSend"><svg class="wa-ic" viewBox="0 0 24 24" fill="#fff" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.71.306 1.263.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.885-9.885 9.885M20.52 3.449C18.24 1.245 15.24 0 12.045 0 5.463 0 .104 5.359.101 11.892c0 2.096.549 4.14 1.595 5.945L0 24l6.335-1.652a11.9 11.9 0 005.71 1.454h.006c6.585 0 11.946-5.359 11.949-11.893a11.821 11.821 0 00-3.484-8.436z"/></svg> Kirim via WhatsApp</button>
+    </div>
   </div>
+
 </aside>
 
 <script>
@@ -514,8 +583,9 @@ var cart = [];
 function cartFind(id){ return cart.find(function(x){ return String(x.id) === String(id); }); }
 function cartTotal(){ return cart.reduce(function(s,x){ return s + x.harga * x.qty; }, 0); }
 function cartCount(){ return cart.reduce(function(s,x){ return s + x.qty; }, 0); }
-function openCart(){ $('cartPanel').classList.add('open'); $('cartOverlay').classList.add('open'); }
+function openCart(){ backToCart(); $('cartPanel').classList.add('open'); $('cartOverlay').classList.add('open'); }
 function closeCart(){ $('cartPanel').classList.remove('open'); $('cartOverlay').classList.remove('open'); }
+function backToCart(){ $('checkoutView').style.display='none'; $('cartView').style.display='flex'; }
 
 function refreshAll(){ renderCart(); renderMenu(); }
 function addItem(m){
@@ -586,15 +656,59 @@ $('cartBtn').addEventListener('click', openCart);
 $('cartClose').addEventListener('click', closeCart);
 $('cartOverlay').addEventListener('click', closeCart);
 
-/* kirim seluruh pesanan via WhatsApp */
-$('cartOrder').addEventListener('click', function(){
+/* ===== Tahap 2: Data Pengiriman ===== */
+var coMethod = 'antar';
+function setMethod(m){
+  coMethod = m;
+  $('coAntar').classList.toggle('on', m === 'antar');
+  $('coAmbil').classList.toggle('on', m === 'ambil');
+  $('coAlamatField').style.display = (m === 'antar') ? '' : 'none';
+}
+function openCheckout(){
   if(cart.length === 0) return;
+  var sum = cart.map(function(it){
+    return '<div class="co-sum-row"><span>' + esc(it.nama) + ' \u00D7' + it.qty + '</span><span>' + rupiah(it.harga * it.qty) + '</span></div>';
+  }).join('');
+  $('coSummary').innerHTML = sum;
+  $('coTotal').textContent = rupiah(cartTotal());
+  $('coErr').classList.remove('show');
+  $('cartView').style.display = 'none';
+  $('checkoutView').style.display = 'flex';
+}
+$('cartOrder').addEventListener('click', openCheckout);
+$('checkoutBack').addEventListener('click', backToCart);
+$('checkoutClose').addEventListener('click', closeCart);
+$('coAntar').addEventListener('click', function(){ setMethod('antar'); });
+$('coAmbil').addEventListener('click', function(){ setMethod('ambil'); });
+
+/* kirim seluruh pesanan + data pengiriman via WhatsApp */
+$('coSend').addEventListener('click', function(){
+  if(cart.length === 0) return;
+  var nama = $('coNama').value.trim();
+  var hp = $('coHp').value.trim();
+  var alamat = $('coAlamat').value.trim();
+  var catatan = $('coCatatan').value.trim();
+  var err = $('coErr');
+  err.classList.remove('show');
+  if(!nama){ err.textContent = 'Nama pelanggan wajib diisi.'; err.classList.add('show'); return; }
+  if(coMethod === 'antar' && !alamat){ err.textContent = 'Alamat rumah wajib diisi untuk pengantaran.'; err.classList.add('show'); return; }
+
   var lines = cart.map(function(it, i){
-    var line = (i+1) + '. ' + it.nama + ' x' + it.qty + ' - ' + rupiah(it.harga * it.qty);
-    if(it.note && it.note.trim()) line += '\n   Catatan: ' + it.note.trim();
-    return line;
+    var l = (i+1) + '. ' + it.nama + ' x' + it.qty + ' - ' + rupiah(it.harga * it.qty);
+    if(it.note && it.note.trim()) l += '\n   Catatan: ' + it.note.trim();
+    return l;
   }).join('\n');
-  var msg = 'Halo ' + namaLengkap + ', saya mau pesan:\n\n' + lines + '\n\nTotal: ' + rupiah(cartTotal());
+
+  var msg = 'Halo ' + namaLengkap + ', saya mau pesan:\n\n';
+  msg += '*DATA PEMESAN*\n';
+  msg += 'Nama: ' + nama + '\n';
+  if(hp) msg += 'No. HP: ' + hp + '\n';
+  msg += 'Metode: ' + (coMethod === 'antar' ? 'Antar ke alamat' : 'Ambil di tempat') + '\n';
+  if(coMethod === 'antar') msg += 'Alamat: ' + alamat + '\n';
+  msg += '\n*PESANAN*\n' + lines + '\n\n';
+  msg += 'Total: ' + rupiah(cartTotal());
+  if(catatan) msg += '\n\nCatatan tambahan: ' + catatan;
+
   window.open(waLink(msg), '_blank');
 });
 
