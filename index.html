@@ -87,13 +87,18 @@
 
   /* MENU GRID (tanpa foto) */
   .menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px}
-  .p-card{background:var(--white);border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:var(--shadow-sm);
+  .p-card{background:var(--white);border:1px solid var(--line);border-radius:20px;padding:0;overflow:hidden;box-shadow:var(--shadow-sm);
     display:flex;flex-direction:column;transition:transform .18s,box-shadow .18s;position:relative}
   .p-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-md)}
+  .p-media{position:relative;height:170px;overflow:hidden;background:#f6ece2}
+  .p-media img{width:100%;height:100%;object-fit:cover;display:block}
+  .p-media.noimg{display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--yellow-50),#ffe9b8)}
+  .p-emoji-big{font-size:46px}
+  .p-info{padding:16px 18px 18px;display:flex;flex-direction:column}
   .p-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
   .p-emoji{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;
     background:linear-gradient(135deg,var(--yellow-50),#ffe9b8)}
-  .p-cat{font-size:11px;font-weight:800;color:#fff;padding:4px 11px;border-radius:20px;background:rgba(20,20,20,.55)}
+  .p-cat{position:absolute;top:12px;left:12px;z-index:2;font-size:11px;font-weight:800;color:#fff;padding:4px 11px;border-radius:20px;background:rgba(20,20,20,.6);box-shadow:0 2px 6px rgba(0,0,0,.25)}
   .p-cat.utama{background:linear-gradient(135deg,#c99b2f,#9e1720)}
   .p-cat.sore{background:linear-gradient(135deg,var(--amber-400),var(--amber-500));color:#5a3300}
   .p-cat.minuman{background:linear-gradient(135deg,#37c26b,#1f9e52)}
@@ -379,16 +384,22 @@ function renderMenu(){
     var badges = '';
     if(m.best) badges += '<span class="p-best">\u2B50 Best Seller</span>';
     if(!ada) badges += '<span class="p-habis">Habis</span>';
+    var catBadge = '<span class="p-cat ' + m.kategori + '">' + (KAT[m.kategori] || '') + '</span>';
+    var media = m.img
+      ? '<div class="p-media"><img src="' + esc(m.img) + '" alt="' + esc(m.nama) + '" loading="lazy" onerror="this.parentNode.classList.add(\'noimg\');this.outerHTML=\'<span class=&quot;p-emoji-big&quot;>' + emoji + '</span>\';">' + catBadge + '</div>'
+      : '<div class="p-media noimg"><span class="p-emoji-big">' + emoji + '</span>' + catBadge + '</div>';
     var pesan = 'Halo ' + namaLengkap + ', saya mau pesan ' + m.nama + ' (' + rupiah(m.harga) + ').';
     var order = ada
       ? '<a class="p-order" href="' + waLink(pesan) + '" target="_blank" rel="noopener">\uD83D\uDCAC Pesan via WhatsApp</a>'
       : '<span class="p-order off">Stok Habis</span>';
     return '<div class="p-card">'
-      + '<div class="p-top"><div class="p-emoji">' + emoji + '</div><span class="p-cat ' + m.kategori + '">' + (KAT[m.kategori] || '') + '</span></div>'
+      + media
+      + '<div class="p-info">'
       + '<div class="p-name">' + esc(m.nama) + '</div>'
       + '<div class="p-price">' + rupiah(m.harga) + '</div>'
       + (badges ? '<div class="p-badges">' + badges + '</div>' : '')
       + order
+      + '</div>'
       + '</div>';
   }).join('');
 }
