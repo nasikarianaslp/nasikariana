@@ -125,8 +125,12 @@
     display:flex;align-items:center;justify-content:center;transition:.15s;
   }
   .bell:hover{background:var(--yellow-50);border-color:var(--amber-300)}
-  .bell .dot{position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:50%;
-    background:var(--amber-400);border:2px solid #fff}
+  .bell .dot{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 5px;border-radius:10px;
+    background:var(--red-600);color:#fff;font-size:11px;font-weight:800;line-height:18px;text-align:center;
+    border:2px solid #fff;display:none}
+  .bell .dot.show{display:block}
+  .bell.ring{animation:bellRing .6s ease}
+  @keyframes bellRing{0%,100%{transform:rotate(0)}20%{transform:rotate(-16deg)}40%{transform:rotate(13deg)}60%{transform:rotate(-9deg)}80%{transform:rotate(5deg)}}
   .logout{
     display:flex;align-items:center;gap:8px;cursor:pointer;
     background:linear-gradient(135deg,var(--red-500),var(--red-600));
@@ -750,7 +754,7 @@
         <p id="pageDesc">Kelola semua menu makanan dan minuman</p>
       </div>
       <div class="top-actions">
-        <button class="bell" title="Notifikasi">&#128276;<span class="dot"></span></button>
+        <button class="bell" id="bell" title="Notifikasi"><span class="bell-ic">&#128276;</span><span class="dot" id="bellDot">0</span></button>
         <button class="logout">&#8618;<span>Keluar</span></button>
       </div>
     </header>
@@ -2002,13 +2006,56 @@ $('kSave').addEventListener('click',()=>{
 /* ---------- PESANAN VIA WHATSAPP (dari Supabase) ---------- */
 let pesananWA = [];
 let waFilterStatus = 'semua';
+let waKnownIds = null;   // null = belum pernah dimuat (init tanpa notif)
+let waUnseen = 0;        // jumlah pesanan baru yang belum dibuka
 const WA_STATUS_LABEL = {baru:'Baru', diproses:'Diproses', selesai:'Selesai'};
+
+function waIsActive(){ const p=document.getElementById('page-wa'); return p && p.classList.contains('show'); }
+
+/* bunyi notifikasi singkat (tanpa file, pakai Web Audio) */
+function waBeep(){
+  try{
+    const AC = window.AudioContext || window.webkitAudioContext; if(!AC) return;
+    const ctx = new AC();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type='sine'; o.frequency.value=880;
+    g.gain.setValueAtTime(0.001, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime+0.03);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.45);
+    o.start(); o.stop(ctx.currentTime+0.46);
+    o.onended=()=>{ try{ctx.close();}catch(e){} };
+  }catch(e){}
+}
+function updateBell(){
+  const dot=document.getElementById('bellDot'); if(!dot) return;
+  dot.textContent = waUnseen>9 ? '9+' : waUnseen;
+  dot.classList.toggle('show', waUnseen>0);
+}
+function notifyNewOrders(n){
+  waUnseen += n;
+  updateBell();
+  const bell=document.getElementById('bell');
+  if(bell){ bell.classList.remove('ring'); void bell.offsetWidth; bell.classList.add('ring'); }
+  waBeep();
+  toast(n===1 ? '\uD83D\uDD14 1 pesanan baru masuk!' : '\uD83D\uDD14 '+n+' pesanan baru masuk!');
+}
 
 function waLoad(){
   if(!sb){ waRender(); return; }
   sb.from('pesanan').select('*').order('created_at',{ascending:false}).then(r=>{
     if(r.error){ console.warn('Muat pesanan WA:', r.error.message); return; }
-    if(Array.isArray(r.data)){ pesananWA = r.data; waRender(); }
+    if(!Array.isArray(r.data)) return;
+    // deteksi pesanan yang benar-benar baru (belum pernah dilihat kodenya)
+    if(waKnownIds === null){
+      waKnownIds = new Set(r.data.map(p=>p.id));   // muat pertama: tanpa notif
+    } else {
+      const fresh = r.data.filter(p=> !waKnownIds.has(p.id) && (p.status||'baru')==='baru');
+      r.data.forEach(p=>waKnownIds.add(p.id));
+      if(fresh.length>0 && !waIsActive()){ notifyNewOrders(fresh.length); }
+    }
+    pesananWA = r.data;
+    waRender();
   });
 }
 function waSubscribe(){
@@ -2083,7 +2130,11 @@ document.querySelectorAll('#waFilter button').forEach(b=>{
   });
 });
 document.getElementById('waRefresh').addEventListener('click',()=>{ waLoad(); toast('Pesanan dimuat ulang'); });
-document.querySelector('.nav-item[data-page="wa"]').addEventListener('click',waLoad);
+document.querySelector('.nav-item[data-page="wa"]').addEventListener('click',()=>{ waUnseen=0; updateBell(); waLoad(); });
+/* klik lonceng -> buka halaman Pesanan via WhatsApp */
+document.getElementById('bell').addEventListener('click',()=>{
+  document.querySelector('.nav-item[data-page="wa"]').click();
+});
 
 /* ---------- Init ---------- */
 loadCreds();
