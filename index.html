@@ -77,6 +77,8 @@
   .sec-head .eyebrow{font-size:12px;font-weight:800;letter-spacing:3px;color:var(--amber-500);text-transform:uppercase}
   .sec-head h2{font-family:'Playfair Display',serif;font-size:clamp(28px,4vw,42px);font-weight:800;color:var(--red-700);margin-top:8px}
   .sec-head h2 span{color:var(--amber-500)}
+  .menu-title{font-family:'Playfair Display',serif;font-weight:800;color:var(--red-700);
+    font-size:clamp(38px,6vw,64px);line-height:1.1}
 
   /* FILTER PILLS */
   .pills{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-bottom:34px}
@@ -116,9 +118,12 @@
   .menu-empty h3{font-size:17px;color:var(--red-700);margin:10px 0 6px}
 
   /* TENTANG */
-  .about{background:var(--white);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .about{position:relative;overflow:hidden;height:260px;
+    background:radial-gradient(120% 140% at 50% 0%,#7d0f18 0%,#3f060c 60%,#180205 100%)}
+  .about-particles{position:absolute;inset:0;pointer-events:none;overflow:hidden}
   .about-in{max-width:760px;margin:0 auto;text-align:center}
   .about-in p{font-size:16px;line-height:1.75;color:#5c4a42}
+  @media (max-width:640px){ .about{height:200px} }
 
   /* INFO CARDS */
   .info-list{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
@@ -287,8 +292,7 @@
 <!-- PRODUK / MENU -->
 <section class="sec wrap" id="produk">
   <div class="sec-head">
-    <div class="eyebrow">Daftar Menu</div>
-    <h2>Daftar Menu Makanan <span id="brandMenu">Ana Nasi Kari</span></h2>
+    <h2 class="menu-title">Daftar Menu</h2>
   </div>
   <div class="pills" id="pills">
     <button class="pill on" data-val="semua">&#9783; Semua Menu</button>
@@ -299,15 +303,9 @@
   <div class="menu-grid" id="menuGrid"></div>
 </section>
 
-<!-- TENTANG -->
-<section class="sec about" id="tentang">
-  <div class="wrap about-in">
-    <div class="sec-head" style="margin-bottom:20px">
-      <div class="eyebrow">Tentang Kami</div>
-      <h2 id="brandTentang">Ana <span>Nasi Kari</span></h2>
-    </div>
-    <p id="tentangText">Sejak 2017, Ana Nasi Kari menyajikan hidangan rumahan dengan cita rasa khas dan bahan pilihan. Kami berkomitmen memberikan menu terbaik untuk keluarga dan pelanggan setia di Selatpanjang dan sekitarnya.</p>
-  </div>
+<!-- TENTANG (pita merah + titik emas bergerak) -->
+<section class="about" id="tentang">
+  <div class="about-particles" id="tentangParticles"></div>
 </section>
 
 <!-- KONTAK / INFO TOKO -->
@@ -437,8 +435,7 @@ var TOKO = {
   alamatLengkap: 'JLN. Teratai No. 42, Selatpanjang<br>Kabupaten Kepulauan Meranti, Riau',
   alamatSingkat: 'JLN. Teratai No. 42, Selatpanjang, Kep. Meranti',
   jamBuka: 10,                  // jam buka (0-23)
-  jamTutup: 22,                 // jam tutup (0-23)
-  tentang: 'Sejak 2017, Ana Nasi Kari menyajikan hidangan rumahan dengan cita rasa khas dan bahan pilihan. Kami berkomitmen memberikan menu terbaik untuk keluarga dan pelanggan setia di Selatpanjang dan sekitarnya.'
+  jamTutup: 22                  // jam tutup (0-23)
 };
 /* ======================= (batas pengaturan mudah) ====================== */
 
@@ -455,12 +452,9 @@ function waLink(text){ return 'https://wa.me/' + TOKO.wa + '?text=' + encodeURIC
 /* Terapkan data toko ke halaman */
 function applyConfig(){
   $('brandNav').innerHTML = brandHTML;
-  $('brandMenu').textContent = namaLengkap;
-  $('brandTentang').innerHTML = brandHTML;
   $('brandFooter').innerHTML = brandHTML;
   $('footerNama').textContent = namaLengkap;
   $('heroTitle').innerHTML = brandHTML;
-  $('tentangText').textContent = TOKO.tentang;
   $('infoAlamat').innerHTML = TOKO.alamatLengkap;
   $('infoWa').textContent = TOKO.waTampil;
   $('infoWaLink').href = waLink('Halo ' + namaLengkap + ', saya mau pesan.');
@@ -721,10 +715,11 @@ window.addEventListener('storage', function(e){
   if(e.key === 'toko_menu_v1'){ loadMenus(); renderMenu(); }
 });
 
-/* partikel emas hero */
-(function(){
-  var box = $('particles'), h = '';
-  for(var i=0;i<40;i++){
+/* partikel emas bergerak (hero & pita Tentang) */
+function spawnParticles(id, count){
+  var box = document.getElementById(id); if(!box) return;
+  var h = '';
+  for(var i=0;i<count;i++){
     var size=(Math.random()*2+1.4).toFixed(1);
     var left=(Math.random()*100).toFixed(2);
     var top=(Math.random()*100).toFixed(2);
@@ -734,7 +729,9 @@ window.addEventListener('storage', function(e){
     h += '<span class="g-dot" style="left:'+left+'%;top:'+top+'%;width:'+size+'px;height:'+size+'px;--td:'+td+'s;--fd:'+fd+'s;--dl:'+dl+'s"></span>';
   }
   box.innerHTML = h;
-})();
+}
+spawnParticles('particles', 40);
+spawnParticles('tentangParticles', 26);
 
 /* ===== Jalankan ===== */
 applyConfig();
