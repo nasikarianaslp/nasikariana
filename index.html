@@ -206,6 +206,16 @@
   .cart-order:hover{filter:brightness(1.05)}
   .cart-order:disabled{background:#e6dcd0;color:#9c8b7c;cursor:not-allowed;filter:none}
 
+  /* stepper jumlah di kartu menu */
+  .p-qty{margin-top:16px;display:flex;align-items:center;justify-content:space-between;gap:10px;
+    background:var(--yellow-50);border:1.5px solid #f2e2b8;border-radius:12px;padding:6px}
+  .p-qty button{width:40px;height:38px;border-radius:9px;border:none;cursor:pointer;font-size:20px;font-weight:800;line-height:1;display:flex;align-items:center;justify-content:center;transition:.15s}
+  .p-minus{background:#fff;border:1.5px solid var(--line);color:var(--red-600)}
+  .p-minus:hover{background:#fdecec}
+  .p-plus{background:linear-gradient(135deg,#25D366,#1da851);color:#fff}
+  .p-plus:hover{filter:brightness(1.05)}
+  .p-qnum{font-weight:800;font-size:14.5px;color:var(--red-700);min-width:60px;text-align:center}
+
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -434,10 +444,21 @@ function renderMenu(){
     var media = m.img
       ? '<div class="p-media"><img src="' + esc(m.img) + '" alt="' + esc(m.nama) + '" loading="lazy" onerror="this.parentNode.classList.add(\'noimg\');this.outerHTML=\'<span class=&quot;p-emoji-big&quot;>' + emoji + '</span>\';">' + catBadge + '</div>'
       : '<div class="p-media noimg"><span class="p-emoji-big">' + emoji + '</span>' + catBadge + '</div>';
-    var pesan = 'Halo ' + namaLengkap + ', saya mau pesan ' + m.nama + ' (' + rupiah(m.harga) + ').';
-    var order = ada
-      ? '<button class="p-order" data-add="' + esc(String(m.id)) + '">\u2795 Tambah ke Keranjang</button>'
-      : '<span class="p-order off">Stok Habis</span>';
+    var order;
+    if(!ada){
+      order = '<span class="p-order off">Stok Habis</span>';
+    } else {
+      var inCart = cartFind(m.id);
+      if(inCart && inCart.qty > 0){
+        order = '<div class="p-qty">'
+          + '<button class="p-minus" data-cdec="' + esc(String(m.id)) + '">\u2212</button>'
+          + '<span class="p-qnum">' + inCart.qty + ' porsi</span>'
+          + '<button class="p-plus" data-cadd="' + esc(String(m.id)) + '">+</button>'
+          + '</div>';
+      } else {
+        order = '<button class="p-order" data-add="' + esc(String(m.id)) + '">\u2795 Tambah</button>';
+      }
+    }
     return '<div class="p-card">'
       + media
       + '<div class="p-info">'
@@ -463,18 +484,24 @@ pills.querySelectorAll('.pill').forEach(function(b){
 
 /* ===== Keranjang Pesanan ===== */
 var cart = [];
-function cartFind(id){ return cart.find(function(x){ return x.id === id; }); }
+function cartFind(id){ return cart.find(function(x){ return String(x.id) === String(id); }); }
 function cartTotal(){ return cart.reduce(function(s,x){ return s + x.harga * x.qty; }, 0); }
 function cartCount(){ return cart.reduce(function(s,x){ return s + x.qty; }, 0); }
 function openCart(){ $('cartPanel').classList.add('open'); $('cartOverlay').classList.add('open'); }
 function closeCart(){ $('cartPanel').classList.remove('open'); $('cartOverlay').classList.remove('open'); }
 
-function addToCart(m){
+function refreshAll(){ renderCart(); renderMenu(); }
+function addItem(m){
   var it = cartFind(m.id);
   if(it){ it.qty++; }
-  else { cart.push({id:m.id, nama:m.nama, harga:m.harga, img:m.img||'', kategori:m.kategori, qty:1, note:''}); }
-  renderCart();
-  openCart();
+  else { cart.push({id:String(m.id), nama:m.nama, harga:m.harga, img:m.img||'', kategori:m.kategori, qty:1, note:''}); }
+  refreshAll();
+}
+function decItem(id){
+  var it = cartFind(id); if(!it) return;
+  it.qty--;
+  if(it.qty <= 0){ cart = cart.filter(function(x){ return String(x.id) !== String(id); }); }
+  refreshAll();
 }
 
 function renderCart(){
@@ -506,19 +533,22 @@ function renderCart(){
   }).join('');
 }
 
-/* tambah ke keranjang dari kartu menu */
+/* tombol pada kartu menu: Tambah / +/- */
 grid.addEventListener('click', function(e){
-  var b = e.target.closest('[data-add]'); if(!b) return;
-  var m = menus.find(function(x){ return String(x.id) === b.dataset.add; });
-  if(m) addToCart(m);
+  var add = e.target.closest('[data-add]');
+  var cadd = e.target.closest('[data-cadd]');
+  var cdec = e.target.closest('[data-cdec]');
+  if(add){ var m1 = menus.find(function(x){ return String(x.id) === add.dataset.add; }); if(m1){ addItem(m1); openCart(); } }
+  else if(cadd){ var m2 = menus.find(function(x){ return String(x.id) === cadd.dataset.cadd; }); if(m2){ addItem(m2); } }
+  else if(cdec){ decItem(cdec.dataset.cdec); }
 });
 
 /* ubah jumlah / hapus / catatan di keranjang */
 $('cartBody').addEventListener('click', function(e){
   var inc = e.target.closest('[data-inc]'), dec = e.target.closest('[data-dec]'), del = e.target.closest('[data-del]');
-  if(inc){ cart[+inc.dataset.inc].qty++; renderCart(); }
-  else if(dec){ var i = +dec.dataset.dec; cart[i].qty--; if(cart[i].qty <= 0) cart.splice(i,1); renderCart(); }
-  else if(del){ cart.splice(+del.dataset.del, 1); renderCart(); }
+  if(inc){ cart[+inc.dataset.inc].qty++; refreshAll(); }
+  else if(dec){ var i = +dec.dataset.dec; cart[i].qty--; if(cart[i].qty <= 0) cart.splice(i,1); refreshAll(); }
+  else if(del){ cart.splice(+del.dataset.del, 1); refreshAll(); }
 });
 $('cartBody').addEventListener('input', function(e){
   var n = e.target.closest('[data-note]'); if(n){ cart[+n.dataset.note].note = n.value; }
