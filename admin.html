@@ -657,10 +657,10 @@
     <form class="login-form" id="loginForm" autocomplete="on">
       <div class="login-welcome">SELAMAT DATANG KEMBALI</div>
       <div class="lf-field">
-        <label for="loginUser">username</label>
+        <label for="loginUser">email</label>
         <div class="lf-input">
           <span class="lf-ic">&#128100;</span>
-          <input id="loginUser" type="text" placeholder="Masukan username" autocomplete="username">
+          <input id="loginUser" type="email" placeholder="chandy@admin.com" autocomplete="username" value="chandy@admin.com">
         </div>
       </div>
       <div class="lf-field">
@@ -679,7 +679,7 @@
           <button type="button" class="lf-eye" id="lfEyePin" aria-label="Lihat PIN">&#128065;</button>
         </div>
       </div>
-      <div class="lf-error" id="lfError">Username, password, atau PIN salah.</div>
+      <div class="lf-error" id="lfError">Email, password, atau PIN salah.</div>
       <button type="submit" class="lf-submit">Masuk</button>
     </form>
   </div>
@@ -943,22 +943,14 @@
       <!-- Kartu 1: Username -->
       <div class="panel set-card">
         <div class="set-head">
-          <h2>Ubah Username</h2>
-          <p>Ganti nama pengguna untuk masuk. Perlu password saat ini sebagai verifikasi.</p>
+          <h2>Email Login</h2>
+          <p>Email ini dipakai untuk masuk ke panel. Berlaku di semua perangkat.</p>
         </div>
         <div class="fld">
-          <label for="uUser">Username baru</label>
-          <input id="uUser" type="text" placeholder="Username admin" autocomplete="username">
-        </div>
-        <div class="fld">
-          <label for="uCur">Password saat ini</label>
-          <div class="pw-wrap">
-            <input id="uCur" type="password" placeholder="Masukkan password saat ini" autocomplete="current-password">
-            <button type="button" class="pw-eye" data-target="uCur" aria-label="Lihat password">&#128065;</button>
-          </div>
+          <label for="uUser">Email</label>
+          <input id="uUser" type="email" readonly style="background:var(--yellow-50);cursor:not-allowed">
         </div>
         <div class="set-error" id="uMsg"></div>
-        <button class="set-save" id="uSave">Simpan Username</button>
       </div>
 
       <!-- Kartu 2: Password -->
@@ -1852,16 +1844,21 @@ document.getElementById('confirmNo').addEventListener('click',()=>closeConfirm(f
 confirmModal.addEventListener('click',e=>{ if(e.target===confirmModal) closeConfirm(false); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&confirmModal.classList.contains('open')) closeConfirm(false); });
 
-/* ---------- Login admin ---------- */
-/* Kredensial tersimpan (bisa diubah dari halaman Pengaturan) */
+/* ---------- Login admin (Supabase Auth + PIN) ---------- */
+/* Fallback lokal dipakai HANYA jika Supabase tidak diisi */
 const CKEY='toko_creds_v1';
 let creds={user:'admin',pass:'admin123',pin:'1234'};
 function loadCreds(){ try{ const r=localStorage.getItem(CKEY); if(r){ const c=JSON.parse(r); if(c&&c.user&&c.pass) creds={user:c.user,pass:c.pass,pin:c.pin||'1234'}; } }catch(e){} }
 function saveCreds(){ try{ localStorage.setItem(CKEY,JSON.stringify(creds)); }catch(e){} }
+
+const DEFAULT_PIN='1234';
+let authUser=null;                 // user Supabase yang sedang login
+function authEmail(){ return authUser ? authUser.email : creds.user; }
+function authPin(){ return (authUser && authUser.user_metadata && authUser.user_metadata.pin) ? String(authUser.user_metadata.pin) : DEFAULT_PIN; }
+
 const loginScreen=document.getElementById('loginScreen');
 const loginForm=document.getElementById('loginForm');
-function loginGet(){ try{ return sessionStorage.getItem('toko_login')==='1'; }catch(e){ return false; } }
-function loginSet(v){ try{ v?sessionStorage.setItem('toko_login','1'):sessionStorage.removeItem('toko_login'); }catch(e){} }
+
 function updateLoginStats(){
   const now=new Date();
   const bulanIni=orders.filter(o=>{ const d=new Date(o.ts); return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear(); }).length;
@@ -1871,21 +1868,38 @@ function updateLoginStats(){
 function showLogin(){ updateLoginStats(); loginScreen.style.display='flex'; document.body.style.overflow='hidden'; }
 function hideLogin(){ loginScreen.style.display='none'; document.body.style.overflow=''; }
 
-loginForm.addEventListener('submit',e=>{
+loginForm.addEventListener('submit',async e=>{
   e.preventDefault();
-  const u=document.getElementById('loginUser').value.trim();
-  const p=document.getElementById('loginPass').value;
+  const email=document.getElementById('loginUser').value.trim();
+  const pass=document.getElementById('loginPass').value;
   const pin=document.getElementById('loginPin').value.trim();
-  if(u===creds.user && p===creds.pass && pin===creds.pin){
-    loginSet(true);
-    document.getElementById('lfError').classList.remove('show');
-    document.getElementById('loginPass').value='';
-    document.getElementById('loginPin').value='';
-    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if(reduce){ hideLogin(); toast('Selamat datang, '+u); }
-    else playLoginSuccess(u);
+  const err=document.getElementById('lfError');
+  const btn=loginForm.querySelector('.lf-submit');
+  err.classList.remove('show');
+
+  if(sb){
+    btn.disabled=true; const lbl=btn.textContent; btn.textContent='Memeriksa…';
+    try{
+      const res=await sb.auth.signInWithPassword({email:email, password:pass});
+      if(res.error){ err.textContent='Email atau password salah.'; err.classList.add('show'); return; }
+      authUser=res.data.user;
+      if(pin!==authPin()){ await sb.auth.signOut(); authUser=null; err.textContent='PIN keamanan salah.'; err.classList.add('show'); return; }
+      // sukses
+      document.getElementById('loginPass').value=''; document.getElementById('loginPin').value='';
+      updateUserChip();
+      const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if(reduce){ hideLogin(); toast('Selamat datang'); } else playLoginSuccess(authEmail());
+    }catch(ex){
+      err.textContent='Gagal terhubung. Cek koneksi internet.'; err.classList.add('show');
+    }finally{ btn.disabled=false; btn.textContent=lbl; }
   }else{
-    document.getElementById('lfError').classList.add('show');
+    // fallback lokal (tanpa Supabase)
+    if(email===creds.user && pass===creds.pass && pin===creds.pin){
+      document.getElementById('loginPass').value=''; document.getElementById('loginPin').value='';
+      updateUserChip();
+      const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if(reduce){ hideLogin(); toast('Selamat datang'); } else playLoginSuccess(email);
+    }else{ err.textContent='Email, password, atau PIN salah.'; err.classList.add('show'); }
   }
 });
 
@@ -1904,26 +1918,17 @@ function playLoginSuccess(name){
   }
   sp.innerHTML=h;
   ov.classList.add('show');
-  void ov.offsetWidth;           // paksa reflow agar animasi mulai bersih
+  void ov.offsetWidth;
   ov.classList.add('run');
   document.body.style.overflow='hidden';
   setTimeout(()=>{
     ov.classList.add('out');
-    setTimeout(()=>{
-      ov.classList.remove('show','run','out');
-      document.body.style.overflow='';
-    },560);
+    setTimeout(()=>{ ov.classList.remove('show','run','out'); document.body.style.overflow=''; },560);
   },1950);
 }
-document.getElementById('lfEye').addEventListener('click',()=>{
-  const inp=document.getElementById('loginPass');
-  inp.type = inp.type==='password' ? 'text' : 'password';
-});
-document.getElementById('lfEyePin').addEventListener('click',()=>{
-  const inp=document.getElementById('loginPin');
-  inp.type = inp.type==='password' ? 'text' : 'password';
-});
-document.querySelector('.logout').addEventListener('click',()=>{ loginSet(false); showLogin(); });
+document.getElementById('lfEye').addEventListener('click',()=>{ const inp=document.getElementById('loginPass'); inp.type = inp.type==='password' ? 'text' : 'password'; });
+document.getElementById('lfEyePin').addEventListener('click',()=>{ const inp=document.getElementById('loginPin'); inp.type = inp.type==='password' ? 'text' : 'password'; });
+document.querySelector('.logout').addEventListener('click',async ()=>{ if(sb){ try{ await sb.auth.signOut(); }catch(e){} } authUser=null; showLogin(); });
 /* pakai logo ANA yang sama untuk brand login */
 (function(){ const bm=document.querySelector('.brand-mark img'); if(bm) document.getElementById('loginLogo').src=bm.src; })();
 
@@ -1953,53 +1958,62 @@ document.querySelectorAll('.pw-eye').forEach(btn=>{
 const $=id=>document.getElementById(id);
 function setMsg(el,msg,ok){ el.textContent=msg; el.className='set-error show'+(ok?' ok':''); }
 
-/* Sinkron email & avatar sidebar dengan username login */
+/* Sidebar chip mengikuti email login */
 function updateUserChip(){
-  const u=(creds.user||'admin').trim();
-  $('userEmail').textContent = u.toLowerCase().replace(/\s+/g,'') + '@admin.com';
-  $('userAvatar').textContent = (u.charAt(0)||'A').toUpperCase();
+  const em=(authEmail()||'admin@admin.com');
+  $('userEmail').textContent = em;
+  $('userAvatar').textContent = (em.charAt(0)||'A').toUpperCase();
 }
 
 function clearSettings(){
-  $('uUser').value=creds.user;
-  ['uCur','pCur','pNew','pConf','kCur','kNew','kConf'].forEach(id=>$(id).value='');
+  $('uUser').value = authEmail() || '';
+  ['pCur','pNew','pConf','kCur','kNew','kConf'].forEach(id=>$(id).value='');
   ['uMsg','pMsg','kMsg'].forEach(id=>$(id).className='set-error');
 }
 document.querySelector('.nav-item[data-page="pengaturan"]').addEventListener('click',clearSettings);
 
-/* Simpan Username saja */
-$('uSave').addEventListener('click',()=>{
-  const nu=$('uUser').value.trim(), cur=$('uCur').value;
-  if(!nu) return setMsg($('uMsg'),'Username tidak boleh kosong.');
-  if(cur!==creds.pass) return setMsg($('uMsg'),'Password saat ini salah.');
-  creds.user=nu; saveCreds();
-  updateUserChip();
-  $('uCur').value='';
-  setMsg($('uMsg'),'Username berhasil diperbarui.',true);
-  toast('Username diperbarui');
-});
+/* Verifikasi password saat ini (Supabase: coba sign-in ulang) */
+async function verifyCurrentPass(cur){
+  if(sb){
+    const r=await sb.auth.signInWithPassword({email:authEmail(), password:cur});
+    return !r.error;
+  }
+  return cur===creds.pass;
+}
 
-/* Simpan Password saja */
-$('pSave').addEventListener('click',()=>{
+/* Ubah Password */
+$('pSave').addEventListener('click',async ()=>{
   const cur=$('pCur').value, np=$('pNew').value, cp=$('pConf').value;
-  if(cur!==creds.pass) return setMsg($('pMsg'),'Password saat ini salah.');
-  if(np.length<4) return setMsg($('pMsg'),'Password baru minimal 4 karakter.');
-  if(np!==cp) return setMsg($('pMsg'),'Konfirmasi password tidak cocok.');
-  creds.pass=np; saveCreds();
+  const msg=$('pMsg');
+  if(np.length<6) return setMsg(msg,'Password baru minimal 6 karakter.');
+  if(np!==cp) return setMsg(msg,'Konfirmasi password tidak cocok.');
+  setMsg(msg,'Menyimpan…',true);
+  if(!(await verifyCurrentPass(cur))) return setMsg(msg,'Password saat ini salah.');
+  if(sb){
+    const r=await sb.auth.updateUser({password:np});
+    if(r.error) return setMsg(msg, 'Gagal: '+r.error.message);
+    authUser=r.data.user;
+  }else{ creds.pass=np; saveCreds(); }
   $('pCur').value=$('pNew').value=$('pConf').value='';
-  setMsg($('pMsg'),'Password berhasil diperbarui.',true);
+  setMsg(msg,'Password berhasil diperbarui (berlaku di semua perangkat).',true);
   toast('Password diperbarui');
 });
 
-/* Simpan PIN saja */
-$('kSave').addEventListener('click',()=>{
+/* Ubah PIN */
+$('kSave').addEventListener('click',async ()=>{
   const cur=$('kCur').value, np=$('kNew').value.trim(), cp=$('kConf').value.trim();
-  if(cur!==creds.pass) return setMsg($('kMsg'),'Password saat ini salah.');
-  if(!/^\d{4,6}$/.test(np)) return setMsg($('kMsg'),'PIN baru harus 4–6 angka.');
-  if(np!==cp) return setMsg($('kMsg'),'Konfirmasi PIN tidak cocok.');
-  creds.pin=np; saveCreds();
+  const msg=$('kMsg');
+  if(!/^\d{4,6}$/.test(np)) return setMsg(msg,'PIN baru harus 4–6 angka.');
+  if(np!==cp) return setMsg(msg,'Konfirmasi PIN tidak cocok.');
+  setMsg(msg,'Menyimpan…',true);
+  if(!(await verifyCurrentPass(cur))) return setMsg(msg,'Password saat ini salah.');
+  if(sb){
+    const r=await sb.auth.updateUser({data:{pin:np}});
+    if(r.error) return setMsg(msg, 'Gagal: '+r.error.message);
+    authUser=r.data.user;
+  }else{ creds.pin=np; saveCreds(); }
   $('kCur').value=$('kNew').value=$('kConf').value='';
-  setMsg($('kMsg'),'PIN berhasil diperbarui.',true);
+  setMsg(msg,'PIN berhasil diperbarui (berlaku di semua perangkat).',true);
   toast('PIN diperbarui');
 });
 
@@ -2142,12 +2156,24 @@ updateUserChip();
 load(); render();
 loadOrders(); clearDemoOrders();
 loadTables();
-document.getElementById('uUser').value=creds.user;
+document.getElementById('uUser').value = authEmail() || '';
 document.getElementById('histDate').value=isoDate(Date.now());
 renderReport(); renderTables(); renderHistory();
-if(loginGet()) hideLogin(); else showLogin();
 sbLoadMenus();   // ambil menu terbaru dari database online (jika Supabase diisi)
 waLoad(); waSubscribe();   // ambil & pantau pesanan WhatsApp masuk (realtime)
+
+/* Cek sesi login: kalau sudah login (sesi Supabase masih ada) -> langsung masuk */
+(async function(){
+  if(sb){
+    try{
+      const s=await sb.auth.getSession();
+      if(s.data && s.data.session){ authUser=s.data.session.user; updateUserChip(); document.getElementById('uUser').value=authEmail(); hideLogin(); return; }
+    }catch(e){}
+    showLogin();
+  }else{
+    showLogin();   // tanpa Supabase, selalu minta login (fallback lokal)
+  }
+})();
 
 </script>
 
