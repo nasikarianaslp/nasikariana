@@ -426,16 +426,14 @@
    (nama, WhatsApp, telepon, alamat, jam buka). Warna diatur di css/theme.css
    ======================================================================= */
 var TOKO = {
-  nama1: 'Ana',                 // bagian nama warna merah
-  nama2: 'Nasi Kari',           // bagian nama warna emas
+  nama1: 'Ana',
+  nama2: 'Nasi Kari',
   sejak: '2017',
-  wa: '628136395015',           // nomor WhatsApp format internasional (tanpa +, tanpa 0 depan)
-  waTampil: '0813-639-5015',    // nomor yang ditampilkan
+  waTampil: '0813-639-5015',    // nomor WhatsApp yang ditampilkan
   telepon: '0813-639-5015',
-  alamatLengkap: 'JLN. Teratai No. 42, Selatpanjang<br>Kabupaten Kepulauan Meranti, Riau',
-  alamatSingkat: 'JLN. Teratai No. 42, Selatpanjang, Kep. Meranti',
-  jamBuka: 10,                  // jam buka (0-23)
-  jamTutup: 22                  // jam tutup (0-23)
+  alamat: 'JLN. Teratai No. 42, Selatpanjang\nKabupaten Kepulauan Meranti, Riau',
+  jamBuka: 10,
+  jamTutup: 22
 };
 /* ======================= (batas pengaturan mudah) ====================== */
 
@@ -447,21 +445,30 @@ var KAT = { utama:'Menu Utama', sore:'Menu Sore', minuman:'Minuman' };
 var EMOJI = { utama:'\uD83C\uDF5B', sore:'\uD83C\uDF5C', minuman:'\uD83E\uDD64' };
 var esc = function(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
 var $ = function(id){ return document.getElementById(id); };
-function waLink(text){ return 'https://wa.me/' + TOKO.wa + '?text=' + encodeURIComponent(text); }
+/* ubah nomor tampilan jadi format wa.me (62...) */
+function toWaNumber(s){
+  var d = String(s||'').replace(/[^0-9]/g,'');
+  if(d.charAt(0)==='0') d = '62' + d.slice(1);
+  else if(d.slice(0,2)!=='62') d = '62' + d;
+  return d;
+}
+function waLink(text){ return 'https://wa.me/' + toWaNumber(TOKO.waTampil) + '?text=' + encodeURIComponent(text); }
 
 /* Terapkan data toko ke halaman */
 function applyConfig(){
+  namaLengkap = TOKO.nama1 + ' ' + TOKO.nama2;
+  brandHTML = TOKO.nama1 + ' <span>' + TOKO.nama2 + '</span>';
   $('brandNav').innerHTML = brandHTML;
   $('brandFooter').innerHTML = brandHTML;
   $('footerNama').textContent = namaLengkap;
   $('heroTitle').innerHTML = brandHTML;
-  $('infoAlamat').innerHTML = TOKO.alamatLengkap;
+  $('infoAlamat').innerHTML = esc(TOKO.alamat).replace(/\n/g,'<br>');
   $('infoWa').textContent = TOKO.waTampil;
   $('infoWaLink').href = waLink('Halo ' + namaLengkap + ', saya mau pesan.');
   $('infoTelp').textContent = TOKO.telepon;
   $('infoJam').textContent = TOKO.jamBuka + '.00 \u2013 ' + TOKO.jamTutup + '.00';
   $('footerSince').textContent = 'Since ' + TOKO.sejak;
-  $('footerAlamat').textContent = TOKO.alamatSingkat;
+  $('footerAlamat').textContent = String(TOKO.alamat).replace(/\n/g,', ');
   $('footerTelp').textContent = TOKO.telepon;
   $('yr').textContent = new Date().getFullYear();
   document.title = namaLengkap;
@@ -733,12 +740,30 @@ function spawnParticles(id, count){
 spawnParticles('particles', 40);
 spawnParticles('tentangParticles', 26);
 
+/* ambil info toko (nama, alamat, WA, jam) dari admin/Supabase */
+function loadTokoInfo(){
+  if(!sb) return;
+  sb.from('pengaturan').select('data').eq('id','toko').then(function(r){
+    if(r.error){ console.warn('Muat info toko:', r.error.message); return; }
+    var row = r.data && r.data[0];
+    if(row && row.data){
+      var d = row.data;
+      ['nama1','nama2','sejak','waTampil','telepon','alamat','jamBuka','jamTutup'].forEach(function(k){
+        if(d[k]!==undefined && d[k]!==null && d[k]!=='') TOKO[k]=d[k];
+      });
+      applyConfig();
+      updateBuka();
+    }
+  });
+}
+
 /* ===== Jalankan ===== */
 applyConfig();
 loadMenus();       // tampilkan cepat dari lokal (jika ada)
 updateBuka();
 renderMenu();
 renderCart();      // siapkan tampilan keranjang (kosong)
+loadTokoInfo();    // ambil info toko terbaru dari admin (Supabase)
 loadMenusOnline(); // lalu ambil dari database online + pantau perubahan realtime
 
 </script>
