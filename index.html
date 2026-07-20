@@ -522,7 +522,15 @@ var filterKat = 'semua';
 var grid = $('menuGrid');
 
 function renderMenu(){
+  var catRank = { utama:0, sore:1, minuman:2 };
   var list = menus.filter(function(m){ return filterKat === 'semua' || m.kategori === filterKat; });
+  // urutkan per jenis menu (ikut urutan tab), lalu yang terbaru di paling bawah tiap jenis
+  list.sort(function(a,b){
+    var ca = (catRank[a.kategori] !== undefined) ? catRank[a.kategori] : 99;
+    var cb = (catRank[b.kategori] !== undefined) ? catRank[b.kategori] : 99;
+    if(ca !== cb) return ca - cb;
+    return String(a.id).localeCompare(String(b.id));   // id lebih kecil = lebih lama = di atas
+  });
   if(menus.length === 0){
     grid.innerHTML = '<div class="menu-empty"><div class="em">\uD83C\uDF7D\uFE0F</div><h3>Menu belum tersedia</h3><p>Menu yang ditambahkan di panel admin akan tampil di sini.</p></div>';
     return;
