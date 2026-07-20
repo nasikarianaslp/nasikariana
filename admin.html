@@ -673,6 +673,21 @@
   .op-status button[data-val="buka"].on{background:linear-gradient(135deg,#37c26b,#1f9e52)}
   .op-status button[data-val="tutup"].on{background:linear-gradient(135deg,#e0555f,#c0182a);color:#fff}
 
+  /* ===== editor ukuran & topping (modal menu) ===== */
+  .opt-editor{margin-top:18px;border-top:1px dashed var(--line);padding-top:16px}
+  .opt-ed-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}
+  .opt-ed-head b{font-size:13.5px;color:var(--red-700)}
+  .opt-ed-head span{display:block;font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4}
+  .opt-ed-add{border:1.5px solid var(--amber-300);background:var(--yellow-50);color:#a97b12;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;flex-shrink:0}
+  .opt-ed-add:hover{background:#ffeec4}
+  .opt-row{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+  .opt-row input{border:1.5px solid var(--line);background:var(--yellow-50);border-radius:10px;padding:10px 12px;font-size:13px;font-family:inherit;color:var(--ink);outline:none}
+  .opt-row input:focus{border-color:var(--amber-400);background:#fff}
+  .opt-row .opt-nama{flex:1;min-width:0}
+  .opt-row .opt-harga{width:110px}
+  .opt-row .opt-del{width:34px;height:34px;flex-shrink:0;border:none;border-radius:9px;background:#fdecec;color:var(--red-600);cursor:pointer;font-size:15px}
+  .opt-row .opt-del:hover{background:#fbdada}
+
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -1170,6 +1185,22 @@
         </div>
       </div>
 
+      <div class="opt-editor">
+        <div class="opt-ed-head">
+          <div><b>&#127869; Ukuran / Porsi</b><span>Opsional. Contoh: Normal 20000, Jumbo 28000. Kosongkan kalau tidak ada pilihan ukuran.</span></div>
+          <button type="button" class="opt-ed-add" id="addVar">+ Ukuran</button>
+        </div>
+        <div id="varList"></div>
+      </div>
+
+      <div class="opt-editor">
+        <div class="opt-ed-head">
+          <div><b>&#129371; Topping Tambahan</b><span>Opsional. Contoh: Telur +5000, Extra Bihun +3000.</span></div>
+          <button type="button" class="opt-ed-add" id="addTop">+ Topping</button>
+        </div>
+        <div id="topList"></div>
+      </div>
+
       <div class="best-row">
         <span class="best-star">&#11088;</span>
         <div class="best-txt"><b>Best Seller</b><span>Tandai sebagai menu terlaris</span></div>
@@ -1287,7 +1318,7 @@ let sb = null;
 if(SUPABASE_URL && SUPABASE_KEY && window.supabase){
   try{ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }catch(e){ sb=null; }
 }
-function sbRecord(m){ return {id:m.id, nama:m.nama, harga:m.harga, kategori:m.kategori, status:m.status, best:!!m.best, img:m.img||''}; }
+function sbRecord(m){ return {id:m.id, nama:m.nama, harga:m.harga, kategori:m.kategori, status:m.status, best:!!m.best, img:m.img||'', varian:m.varian||[], topping:m.topping||[]}; }
 function sbUpsert(m){ if(!sb) return; sb.from('menu').upsert(sbRecord(m)).then(r=>{ if(r.error) console.warn('Supabase simpan:', r.error.message); }); }
 function sbDelete(id){ if(!sb) return; sb.from('menu').delete().eq('id',id).then(r=>{ if(r.error) console.warn('Supabase hapus:', r.error.message); }); }
 async function sbLoadMenus(){
@@ -1481,6 +1512,8 @@ function openModal(id){
     document.getElementById('btnSave').textContent='Simpan Perubahan';
     inName.value=m.nama; inPrice.value=m.harga; inKat.value=m.kategori;
     inStatus.value=m.status; inBest.checked=!!m.best;
+    fillOptRows('varList', m.varian);
+    fillOptRows('topList', m.topping);
     if(m.img){ setPhotoMode(m.img.startsWith('data:')?'upload':'url'); if(!m.img.startsWith('data:')) inUrl.value=m.img; showPreview(m.img); }
     else { resetForm(false); }
   }else{
@@ -1492,9 +1525,40 @@ function openModal(id){
   document.body.style.overflow='hidden';
   setTimeout(()=>inName.focus(),80);
 }
+
+/* baris ukuran & topping */
+function optRowHTML(nama, harga){
+  return '<div class="opt-row"><input class="opt-nama" type="text" placeholder="Nama" value="'+(nama?String(nama).replace(/"/g,'&quot;'):'')+'"><input class="opt-harga" type="number" min="0" step="500" placeholder="Harga" value="'+(harga!==undefined&&harga!==''?harga:'')+'"><button type="button" class="opt-del">&times;</button></div>';
+}
+function addOptRow(listId, nama, harga){
+  const list=document.getElementById(listId);
+  const wrap=document.createElement('div');
+  wrap.innerHTML=optRowHTML(nama,harga);
+  const row=wrap.firstChild;
+  row.querySelector('.opt-del').addEventListener('click',()=>row.remove());
+  list.appendChild(row);
+}
+function fillOptRows(listId, arr){
+  const list=document.getElementById(listId);
+  list.innerHTML='';
+  (arr||[]).forEach(o=>addOptRow(listId, o.nama, o.harga));
+}
+function readOptRows(listId){
+  const out=[];
+  document.querySelectorAll('#'+listId+' .opt-row').forEach(r=>{
+    const nama=r.querySelector('.opt-nama').value.trim();
+    const harga=Number(r.querySelector('.opt-harga').value);
+    if(nama && !isNaN(harga)) out.push({nama:nama, harga:harga});
+  });
+  return out;
+}
+document.getElementById('addVar').addEventListener('click',()=>addOptRow('varList','',''));
+document.getElementById('addTop').addEventListener('click',()=>addOptRow('topList','',''));
+
 function resetForm(){
   inName.value=''; inPrice.value=''; inKat.value='utama'; inStatus.value='tersedia';
   inBest.checked=false; inUrl.value=''; fileInput.value='';
+  fillOptRows('varList', []); fillOptRows('topList', []);
   setPhotoMode('upload'); resetPreview();
 }
 function closeModal(){ modal.classList.remove('open'); document.body.style.overflow=''; }
@@ -1533,7 +1597,9 @@ document.getElementById('btnSave').addEventListener('click',async ()=>{
     kategori:inKat.value,
     status:inStatus.value,
     best:inBest.checked,
-    img:imgVal
+    img:imgVal,
+    varian:readOptRows('varList'),
+    topping:readOptRows('topList')
   };
 
   if(editingId){
@@ -2185,8 +2251,11 @@ function waRender(){
   list.innerHTML = rows.map(p=>{
     const st = p.status || 'baru';
     const items = (p.items||[]).map(it=>{
-      const note = it.note && it.note.trim() ? '<span class="note">Catatan: '+escapeHtml(it.note)+'</span>' : '';
-      return '<div class="wa-o-item"><span>'+escapeHtml(it.nama)+' <span class="qn">\u00D7'+it.qty+'</span>'+note+'</span><span>'+rupiah((it.harga||0)*it.qty)+'</span></div>';
+      const uk = it.ukuran ? ' ('+escapeHtml(it.ukuran)+')' : '';
+      let sub = '';
+      if(it.topping && it.topping.length){ sub += '<span class="note">Topping: '+it.topping.map(t=>escapeHtml(t.nama)+(t.qty>1?(' x'+t.qty):'')).join(', ')+'</span>'; }
+      if(it.note && it.note.trim()){ sub += '<span class="note">Catatan: '+escapeHtml(it.note)+'</span>'; }
+      return '<div class="wa-o-item"><span>'+escapeHtml(it.nama)+uk+' <span class="qn">\u00D7'+it.qty+'</span>'+sub+'</span><span>'+rupiah((it.harga||0)*it.qty)+'</span></div>';
     }).join('');
     const catatan = p.catatan && p.catatan.trim() ? '<div class="wa-o-catatan">\uD83D\uDCDD '+escapeHtml(p.catatan)+'</div>' : '';
     let actions = '';
