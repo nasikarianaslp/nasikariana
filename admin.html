@@ -624,6 +624,16 @@
   .nav-item .nav-dot{margin-left:auto;background:#25D366;color:#fff;font-size:10.5px;font-weight:800;min-width:18px;height:18px;border-radius:10px;display:none;align-items:center;justify-content:center;padding:0 5px}
   .nav-item .nav-dot.show{display:flex}
 
+  /* ===== FORM OPERASIONAL (info toko) ===== */
+  .op-section{display:flex;align-items:center;gap:10px;margin:24px 0 6px;font-size:13px;font-weight:800;color:var(--red-700);letter-spacing:.3px}
+  .op-section .op-ic{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;
+    background:linear-gradient(135deg,var(--yellow-50),#ffe9b8);flex-shrink:0}
+  .op-section .op-line{flex:1;height:1px;background:var(--line)}
+  .op-hint{font-size:11.5px;color:var(--muted);margin-top:5px}
+  .fld textarea{width:100%;border:1.5px solid var(--line);background:var(--yellow-50);border-radius:12px;padding:12px 14px;
+    font-size:14px;font-family:inherit;color:var(--ink);outline:none;resize:vertical;line-height:1.5;min-height:76px}
+  .fld textarea:focus{border-color:var(--amber-400);background:#fff}
+
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -937,27 +947,34 @@
       </div>
     </section>
     <section class="page" id="page-role">
-      <div class="panel set-card" style="max-width:640px">
+      <div class="panel set-card" style="max-width:660px">
         <div class="set-head">
-          <h2>Info Toko (Halaman Pelanggan)</h2>
-          <p>Ubah data yang tampil di halaman pelanggan (bagian "Informasi Toko Makan" &amp; footer). Perubahan langsung berlaku tanpa perlu edit kode.</p>
+          <h2>&#127976; Info Toko (Halaman Pelanggan)</h2>
+          <p>Ubah data yang tampil di halaman pelanggan. Perubahan langsung berlaku tanpa perlu edit kode.</p>
         </div>
+
+        <div class="op-section"><span class="op-ic">&#127978;</span> Identitas Toko <span class="op-line"></span></div>
         <div class="grid-2">
-          <div class="fld"><label for="opNama1">Nama Toko (bagian merah)</label><input id="opNama1" type="text" placeholder="Ana"></div>
-          <div class="fld"><label for="opNama2">Nama Toko (bagian emas)</label><input id="opNama2" type="text" placeholder="Nasi Kari"></div>
+          <div class="fld"><label for="opNama1">&#128308; Nama (bagian merah)</label><input id="opNama1" type="text" placeholder="Ana"></div>
+          <div class="fld"><label for="opNama2">&#128993; Nama (bagian emas)</label><input id="opNama2" type="text" placeholder="Nasi Kari"></div>
         </div>
+        <div class="fld"><label for="opSejak">&#128197; Tahun Berdiri</label><input id="opSejak" type="text" placeholder="2017"><div class="op-hint">Tampil sebagai "Since 2017" di footer.</div></div>
+
+        <div class="op-section"><span class="op-ic">&#128222;</span> Kontak &amp; Alamat <span class="op-line"></span></div>
         <div class="grid-2">
-          <div class="fld"><label for="opSejak">Tahun Berdiri (Since)</label><input id="opSejak" type="text" placeholder="2017"></div>
-          <div class="fld"><label for="opTelp">Nomor Telepon</label><input id="opTelp" type="text" placeholder="0813-639-5015"></div>
+          <div class="fld"><label for="opWa">&#128172; Nomor WhatsApp</label><input id="opWa" type="text" placeholder="0813-639-5015"><div class="op-hint">Untuk tombol "Pesan via WhatsApp".</div></div>
+          <div class="fld"><label for="opTelp">&#128222; Nomor Telepon</label><input id="opTelp" type="text" placeholder="0813-639-5015"></div>
         </div>
-        <div class="fld"><label for="opWa">Nomor WhatsApp</label><input id="opWa" type="text" placeholder="0813-639-5015"></div>
-        <div class="fld"><label for="opAlamat">Alamat</label><textarea id="opAlamat" rows="3" placeholder="Nama jalan, no, kota..."></textarea></div>
+        <div class="fld"><label for="opAlamat">&#127968; Alamat Toko</label><textarea id="opAlamat" rows="3" placeholder="Nama jalan, no. rumah, kota..."></textarea><div class="op-hint">Boleh beberapa baris (tekan Enter untuk ganti baris).</div></div>
+
+        <div class="op-section"><span class="op-ic">&#128336;</span> Jam Operasional <span class="op-line"></span></div>
         <div class="grid-2">
-          <div class="fld"><label for="opJamBuka">Jam Buka (0–23)</label><input id="opJamBuka" type="number" min="0" max="23" placeholder="10"></div>
-          <div class="fld"><label for="opJamTutup">Jam Tutup (0–23)</label><input id="opJamTutup" type="number" min="0" max="23" placeholder="22"></div>
+          <div class="fld"><label for="opJamBuka">&#127749; Jam Buka</label><input id="opJamBuka" type="number" min="0" max="23" placeholder="10"><div class="op-hint">Format 24 jam (0–23).</div></div>
+          <div class="fld"><label for="opJamTutup">&#127747; Jam Tutup</label><input id="opJamTutup" type="number" min="0" max="23" placeholder="22"><div class="op-hint">Status Buka/Tutup otomatis.</div></div>
         </div>
+
         <div class="set-error" id="opMsg"></div>
-        <button class="set-save" id="opSave">Simpan Perubahan</button>
+        <button class="set-save" id="opSave">&#128190; Simpan Perubahan</button>
       </div>
     </section>
     <section class="page" id="page-pengaturan">
