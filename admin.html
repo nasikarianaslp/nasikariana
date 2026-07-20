@@ -226,6 +226,18 @@
   @media (max-width:560px){
     .topbar{flex-wrap:wrap}
     .logout span{display:none}
+    /* HP: kartu 2 kolom biar tidak banyak scroll */
+    .stats{grid-template-columns:repeat(2,1fr);gap:10px}
+    .menu-grid{grid-template-columns:repeat(2,1fr);gap:12px}
+    .card-img{height:110px}
+    .card-body{padding:11px 11px 12px}
+    .card-name{font-size:13px;line-height:1.25}
+    .card-price{font-size:14.5px}
+    .card-actions{gap:6px;margin-top:10px}
+    .card-actions button{padding:8px 0;font-size:11.5px;gap:3px}
+    .chip{font-size:9.5px;padding:3px 8px}
+    .chip-best{font-size:9.5px;padding:3px 8px}
+    .table-grid{grid-template-columns:repeat(2,1fr);gap:12px}
   }
   button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--amber-500);outline-offset:2px}
   @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
