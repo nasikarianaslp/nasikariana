@@ -278,6 +278,36 @@
   .closed-banner b{font-weight:800;color:var(--amber-300)}
   @keyframes closedPulse{0%,100%{opacity:1}50%{opacity:.85}}
 
+  /* ===== toast pelanggan ===== */
+  .p-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--red-700);color:#fff;
+    padding:12px 20px;border-radius:12px;font-size:13.5px;font-weight:600;box-shadow:0 10px 30px -8px rgba(0,0,0,.5);
+    opacity:0;pointer-events:none;transition:.25s;z-index:70;max-width:90vw;text-align:center}
+  .p-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* ===== overlay menunggu pesanan ===== */
+  .wait-overlay{position:fixed;inset:0;z-index:60;background:rgba(20,4,6,.62);backdrop-filter:blur(4px);
+    display:none;align-items:center;justify-content:center;padding:24px}
+  .wait-overlay.show{display:flex}
+  .wait-card{background:#fff;border-radius:22px;padding:34px 26px 24px;max-width:340px;width:100%;text-align:center;
+    box-shadow:0 24px 60px -18px rgba(0,0,0,.5);animation:waitPop .3s ease}
+  @keyframes waitPop{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+  .wait-anim{width:96px;height:96px;margin:0 auto 20px;position:relative;display:flex;align-items:center;justify-content:center}
+  .wait-ring{position:absolute;inset:0;border-radius:50%;border:5px solid #f2e2b8;border-top-color:var(--amber-500);animation:waitSpin 1s linear infinite}
+  .wait-ic{font-size:38px;position:relative;z-index:1}
+  @keyframes waitSpin{to{transform:rotate(360deg)}}
+  .wait-card h3{font-family:'Playfair Display',serif;font-size:22px;color:var(--red-700);margin-bottom:8px}
+  .wait-card p{font-size:14px;color:#5c4a42;line-height:1.5}
+  .wait-dots span{animation:waitBlink 1.4s infinite both}
+  .wait-dots span:nth-child(2){animation-delay:.2s}
+  .wait-dots span:nth-child(3){animation-delay:.4s}
+  @keyframes waitBlink{0%,80%,100%{opacity:0}40%{opacity:1}}
+  .wait-note{margin-top:14px;font-size:12px;color:var(--muted);background:var(--yellow-50);border-radius:10px;padding:10px 12px;line-height:1.5}
+  .wait-btn{margin-top:18px;width:100%;border:none;border-radius:13px;padding:13px 0;font-size:15px;font-weight:800;color:#fff;cursor:pointer;
+    background:linear-gradient(135deg,#25D366,#1da851)}
+  .wait-btn:hover{filter:brightness(1.05)}
+  .wait-close{margin-top:10px;background:transparent;border:none;color:var(--muted);font-size:12.5px;cursor:pointer;text-decoration:underline}
+  .wait-overlay.done .wait-ring{border-color:#bfe8cd;border-top-color:#1f9e52;animation:none}
+
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -446,6 +476,18 @@
 
 </aside>
 
+<!-- ===== ANIMASI MENUNGGU PESANAN DIPROSES ===== -->
+<div class="wait-overlay" id="waitOverlay">
+  <div class="wait-card">
+    <div class="wait-anim"><div class="wait-ring"></div><div class="wait-ic" id="waitIc">&#128338;</div></div>
+    <h3 id="waitTitle">Pesanan Terkirim!</h3>
+    <p id="waitMsg">Menunggu dikonfirmasi admin<span class="wait-dots"><span>.</span><span>.</span><span>.</span></span></p>
+    <div class="wait-note" id="waitNote">Kamu bisa memesan lagi setelah pesanan ini diproses oleh admin.</div>
+    <button class="wait-btn" id="waitBtn" style="display:none">Pesan Lagi</button>
+    <button class="wait-close" id="waitClose">Tutup sementara</button>
+  </div>
+</div>
+
 <script>
 /* =======================================================================
    PENGATURAN MUDAH — UBAH DATA TOKO DI SINI SAJA
@@ -603,6 +645,64 @@ pills.querySelectorAll('.pill').forEach(function(b){
   });
 });
 
+/* ===== Toast ===== */
+function toast(msg){
+  var t = document.getElementById('pToast');
+  if(!t){ t = document.createElement('div'); t.id='pToast'; t.className='p-toast'; document.body.appendChild(t); }
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(function(){ t.classList.remove('show'); }, 2600);
+}
+
+/* ===== Menunggu pesanan diproses admin ===== */
+var orderPending = false;
+var pendingId = null;
+var waitTimer = null;
+function startWaiting(id){
+  pendingId = id; orderPending = true;
+  try { localStorage.setItem('toko_pending_order', id); } catch(e){}
+  var ov = $('waitOverlay');
+  ov.classList.remove('done');
+  $('waitIc').textContent = '\uD83D\uDD52';
+  $('waitTitle').textContent = 'Pesanan Terkirim!';
+  $('waitMsg').innerHTML = 'Menunggu dikonfirmasi admin<span class="wait-dots"><span>.</span><span>.</span><span>.</span></span>';
+  $('waitNote').style.display = '';
+  $('waitBtn').style.display = 'none';
+  $('waitClose').style.display = '';
+  ov.classList.add('show');
+  pollPending();
+  if(waitTimer) clearInterval(waitTimer);
+  waitTimer = setInterval(pollPending, 4000);
+}
+function pollPending(){
+  if(!sb || !pendingId) return;
+  sb.from('pesanan').select('status').eq('id', pendingId).then(function(r){
+    if(r.error) return;
+    var row = r.data && r.data[0];
+    if(!row){ resolveWaiting('selesai'); return; }           // dihapus admin -> anggap selesai
+    if(row.status && row.status !== 'baru'){ resolveWaiting(row.status); }
+  });
+}
+function resolveWaiting(status){
+  if(waitTimer){ clearInterval(waitTimer); waitTimer = null; }
+  orderPending = false;
+  var ov = $('waitOverlay');
+  ov.classList.add('show','done');
+  $('waitIc').textContent = '\u2713';
+  $('waitTitle').textContent = (status === 'selesai') ? 'Pesanan Selesai!' : 'Pesanan Diproses!';
+  $('waitMsg').textContent = (status === 'selesai') ? 'Terima kasih, pesananmu sudah selesai.' : 'Pesananmu sudah diterima & sedang disiapkan admin.';
+  $('waitNote').style.display = 'none';
+  $('waitBtn').style.display = '';
+  $('waitClose').style.display = 'none';
+}
+function clearPending(){
+  if(waitTimer){ clearInterval(waitTimer); waitTimer = null; }
+  orderPending = false; pendingId = null;
+  try { localStorage.removeItem('toko_pending_order'); } catch(e){}
+  $('waitOverlay').classList.remove('show','done');
+}
+$('waitBtn').addEventListener('click', clearPending);
+$('waitClose').addEventListener('click', function(){ $('waitOverlay').classList.remove('show'); });
+
 /* ===== Keranjang Pesanan ===== */
 var cart = [];
 function cartFind(id){ return cart.find(function(x){ return String(x.id) === String(id); }); }
@@ -614,6 +714,7 @@ function backToCart(){ $('checkoutView').style.display='none'; $('cartView').sty
 
 function refreshAll(){ renderCart(); renderMenu(); }
 function addItem(m){
+  if(orderPending){ toast('Pesanan sebelumnya masih menunggu diproses admin.'); $('waitOverlay').classList.add('show'); return; }
   var it = cartFind(m.id);
   if(it){ it.qty++; }
   else { cart.push({id:String(m.id), nama:m.nama, harga:m.harga, img:m.img||'', kategori:m.kategori, qty:1, note:''}); }
@@ -723,9 +824,10 @@ $('coSend').addEventListener('click', function(){
   if(catatan) msg += '\n\nCatatan tambahan: ' + catatan;
 
   /* simpan pesanan ke database agar masuk ke panel admin (Pesanan via WhatsApp) */
+  var pid = 'p' + Date.now() + Math.random().toString(36).slice(2,6);
   if(sb){
     var pesanan = {
-      id: 'p' + Date.now() + Math.random().toString(36).slice(2,6),
+      id: pid,
       nama: nama,
       alamat: alamat,
       items: cart.map(function(it){ return {nama:it.nama, qty:it.qty, harga:it.harga, note:it.note||''}; }),
@@ -736,7 +838,14 @@ $('coSend').addEventListener('click', function(){
     sb.from('pesanan').insert(pesanan).then(function(r){ if(r.error) console.warn('Simpan pesanan:', r.error.message); });
   }
 
-  window.open(waLink(msg), '_blank');
+  window.open(waLink(msg), '_blank');   // buka WhatsApp (harus sinkron)
+
+  /* kosongkan keranjang & tampilkan animasi menunggu diproses admin */
+  cart = [];
+  refreshAll();
+  closeCart();
+  if(sb) startWaiting(pid);
+  else toast('Pesanan terkirim via WhatsApp.');
 });
 
 /* menu HP */
@@ -816,6 +925,19 @@ renderMenu();
 renderCart();      // siapkan tampilan keranjang (kosong)
 loadTokoInfo();    // ambil info toko terbaru dari admin (Supabase)
 loadMenusOnline(); // lalu ambil dari database online + pantau perubahan realtime
+
+/* pulihkan status menunggu jika masih ada pesanan yang belum diproses */
+(function(){
+  if(!sb) return;
+  var id=null; try{ id=localStorage.getItem('toko_pending_order'); }catch(e){}
+  if(!id) return;
+  pendingId=id;
+  sb.from('pesanan').select('status').eq('id',id).then(function(r){
+    var row = r.data && r.data[0];
+    if(!row || (row.status && row.status!=='baru')){ clearPending(); }
+    else { startWaiting(id); }
+  });
+})();
 
 </script>
 
