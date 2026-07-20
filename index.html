@@ -308,6 +308,13 @@
   .wait-close{margin-top:10px;background:transparent;border:none;color:var(--muted);font-size:12.5px;cursor:pointer;text-decoration:underline}
   .wait-overlay.done .wait-ring{border-color:#bfe8cd;border-top-color:#1f9e52;animation:none}
 
+  /* rincian pesanan di layar menunggu */
+  .wait-detail{margin-top:16px;text-align:left;background:var(--yellow-50);border:1px solid #f2e2b8;border-radius:12px;padding:12px 14px;max-height:170px;overflow-y:auto}
+  .wait-detail .wd-head{font-size:12px;font-weight:800;color:var(--red-700);margin-bottom:8px}
+  .wait-detail .wd-row{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:#5c4a42;padding:3px 0}
+  .wait-detail .wd-note{display:block;font-size:11px;color:var(--muted);margin-top:1px}
+  .wait-detail .wd-total{display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid #e9d6a8;font-weight:800;color:var(--red-700);font-size:14px}
+
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -483,6 +490,7 @@
     <h3 id="waitTitle">Pesanan Terkirim!</h3>
     <p id="waitMsg">Menunggu dikonfirmasi admin<span class="wait-dots"><span>.</span><span>.</span><span>.</span></span></p>
     <div class="wait-note" id="waitNote">Kamu bisa memesan lagi setelah pesanan ini selesai diproses oleh admin.</div>
+    <div class="wait-detail" id="waitDetail" style="display:none"></div>
     <button class="wait-btn" id="waitBtn" style="display:none">Pesan Lagi</button>
     <button class="wait-close" id="waitClose">Tutup sementara</button>
   </div>
@@ -656,7 +664,18 @@ function toast(msg){
 /* ===== Menunggu pesanan diproses admin ===== */
 var orderPending = false;
 var pendingId = null;
+var pendingOrder = null;
 var waitTimer = null;
+function renderWaitDetail(o){
+  var box = $('waitDetail'); if(!box) return;
+  if(!o || !o.items || !o.items.length){ box.style.display='none'; box.innerHTML=''; return; }
+  var rows = o.items.map(function(it){
+    var note = (it.note && it.note.trim()) ? '<span class="wd-note">Catatan: ' + esc(it.note) + '</span>' : '';
+    return '<div class="wd-row"><span>' + esc(it.nama) + ' \u00D7' + it.qty + note + '</span><span>' + rupiah((it.harga||0)*it.qty) + '</span></div>';
+  }).join('');
+  box.innerHTML = '<div class="wd-head">\uD83E\uDDFE Rincian Pesananmu</div>' + rows + '<div class="wd-total"><span>Total</span><span>' + rupiah(o.total||0) + '</span></div>';
+  box.style.display = '';
+}
 function showWaiting(st){
   var ov = $('waitOverlay');
   ov.classList.remove('done');
@@ -674,11 +693,13 @@ function showWaiting(st){
     $('waitNote').textContent = 'Kamu bisa memesan lagi setelah pesanan ini selesai diproses admin.';
   }
 }
-function startWaiting(id){
+function startWaiting(id, data){
   pendingId = id; orderPending = true;
+  if(data){ pendingOrder = data; try{ localStorage.setItem('toko_pending_order_data', JSON.stringify(data)); }catch(e){} }
   try { localStorage.setItem('toko_pending_order', id); } catch(e){}
   $('waitOverlay').classList.add('show');
   showWaiting('baru');
+  renderWaitDetail(pendingOrder);
   pollPending();
   if(waitTimer) clearInterval(waitTimer);
   waitTimer = setInterval(pollPending, 4000);
@@ -708,8 +729,8 @@ function finishWaiting(){
 }
 function clearPending(){
   if(waitTimer){ clearInterval(waitTimer); waitTimer = null; }
-  orderPending = false; pendingId = null;
-  try { localStorage.removeItem('toko_pending_order'); } catch(e){}
+  orderPending = false; pendingId = null; pendingOrder = null;
+  try { localStorage.removeItem('toko_pending_order'); localStorage.removeItem('toko_pending_order_data'); } catch(e){}
   $('waitOverlay').classList.remove('show','done');
 }
 $('waitBtn').addEventListener('click', clearPending);
@@ -837,26 +858,27 @@ $('coSend').addEventListener('click', function(){
 
   /* simpan pesanan ke database agar masuk ke panel admin (Pesanan via WhatsApp) */
   var pid = 'p' + Date.now() + Math.random().toString(36).slice(2,6);
+  var pesanan = {
+    id: pid,
+    nama: nama,
+    alamat: alamat,
+    items: cart.map(function(it){ return {nama:it.nama, qty:it.qty, harga:it.harga, note:it.note||''}; }),
+    total: cartTotal(),
+    catatan: catatan,
+    status: 'baru'
+  };
   if(sb){
-    var pesanan = {
-      id: pid,
-      nama: nama,
-      alamat: alamat,
-      items: cart.map(function(it){ return {nama:it.nama, qty:it.qty, harga:it.harga, note:it.note||''}; }),
-      total: cartTotal(),
-      catatan: catatan,
-      status: 'baru'
-    };
     sb.from('pesanan').insert(pesanan).then(function(r){ if(r.error) console.warn('Simpan pesanan:', r.error.message); });
   }
 
   window.open(waLink(msg), '_blank');   // buka WhatsApp (harus sinkron)
 
   /* kosongkan keranjang & tampilkan animasi menunggu diproses admin */
+  var pesananSalinan = { items: pesanan.items, total: pesanan.total, nama: pesanan.nama, alamat: pesanan.alamat, catatan: pesanan.catatan };
   cart = [];
   refreshAll();
   closeCart();
-  if(sb) startWaiting(pid);
+  if(sb) startWaiting(pid, pesananSalinan);
   else toast('Pesanan terkirim via WhatsApp.');
 });
 
@@ -944,10 +966,10 @@ loadMenusOnline(); // lalu ambil dari database online + pantau perubahan realtim
   var id=null; try{ id=localStorage.getItem('toko_pending_order'); }catch(e){}
   if(!id) return;
   pendingId=id;
-  sb.from('pesanan').select('status').eq('id',id).then(function(r){
+  sb.from('pesanan').select('*').eq('id',id).then(function(r){
     var row = r.data && r.data[0];
     if(!row || row.status==='selesai'){ clearPending(); }
-    else { startWaiting(id); }   // baru / diproses -> tetap menunggu
+    else { startWaiting(id, row); }   // baru / diproses -> tetap menunggu + rincian
   });
 })();
 
