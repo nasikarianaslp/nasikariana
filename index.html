@@ -255,6 +255,13 @@
   .co-err{color:var(--red-500);font-size:12.5px;font-weight:700;display:none}
   .co-err.show{display:block}
 
+  /* banner status toko tutup */
+  .closed-banner{display:none;background:linear-gradient(135deg,#c0182a,#7d0f18);color:#fff;text-align:center;
+    padding:14px 18px;font-size:14.5px;font-weight:600;letter-spacing:.2px}
+  .closed-banner.show{display:block;animation:closedPulse 2.4s ease-in-out infinite}
+  .closed-banner b{font-weight:800;color:var(--amber-300)}
+  @keyframes closedPulse{0%,100%{opacity:1}50%{opacity:.85}}
+
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -288,6 +295,9 @@
     </div>
   </div>
 </section>
+
+<!-- Banner status toko tutup -->
+<div class="closed-banner" id="closedBanner"></div>
 
 <!-- PRODUK / MENU -->
 <section class="sec wrap" id="produk">
@@ -433,7 +443,8 @@ var TOKO = {
   telepon: '0813-639-5015',
   alamat: 'JLN. Teratai No. 42, Selatpanjang\nKabupaten Kepulauan Meranti, Riau',
   jamBuka: 10,
-  jamTutup: 22
+  jamTutup: 22,
+  statusToko: 'auto'            // auto | buka | tutup (diatur dari admin)
 };
 /* ======================= (batas pengaturan mudah) ====================== */
 
@@ -709,12 +720,28 @@ var burger = $('burger'), navLinks = $('navLinks');
 burger.addEventListener('click', function(){ navLinks.classList.toggle('open'); });
 navLinks.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', function(){ navLinks.classList.remove('open'); }); });
 
-/* status buka/tutup otomatis */
+/* status buka/tutup (otomatis ikut jam, atau paksa buka/tutup dari admin) */
 function updateBuka(){
+  var mode = TOKO.statusToko || 'auto';
   var h = new Date().getHours();
-  var buka = h >= TOKO.jamBuka && h < TOKO.jamTutup;
+  var buka;
+  if(mode === 'buka') buka = true;
+  else if(mode === 'tutup') buka = false;
+  else buka = h >= TOKO.jamBuka && h < TOKO.jamTutup;
+
   $('bukaTag').className = 'buka-tag ' + (buka ? 'buka' : 'tutup');
   $('bukaTxt').textContent = buka ? 'Buka sekarang' : 'Tutup';
+
+  var banner = $('closedBanner');
+  if(banner){
+    if(buka){ banner.classList.remove('show'); }
+    else {
+      banner.classList.add('show');
+      banner.innerHTML = (mode === 'tutup')
+        ? '\uD83D\uDD34 Maaf, toko sedang <b>TUTUP SEMENTARA</b>. Silakan kembali lagi nanti.'
+        : '\uD83D\uDD34 Toko sedang <b>TUTUP</b>. Jam buka: ' + TOKO.jamBuka + '.00 \u2013 ' + TOKO.jamTutup + '.00.';
+    }
+  }
 }
 
 /* update otomatis jika menu berubah di tab lain (mis. dari panel admin) */
@@ -748,7 +775,7 @@ function loadTokoInfo(){
     var row = r.data && r.data[0];
     if(row && row.data){
       var d = row.data;
-      ['nama1','nama2','sejak','waTampil','telepon','alamat','jamBuka','jamTutup'].forEach(function(k){
+      ['nama1','nama2','sejak','waTampil','telepon','alamat','jamBuka','jamTutup','statusToko'].forEach(function(k){
         if(d[k]!==undefined && d[k]!==null && d[k]!=='') TOKO[k]=d[k];
       });
       applyConfig();
