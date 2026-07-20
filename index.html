@@ -161,7 +161,23 @@
     .nav-links.open{display:flex}
     .nav-links a{padding:13px 22px;width:100%}
     .burger{display:block}
-    .cart{display:none}
+    .cart{display:inline-flex;align-items:center;justify-content:center}
+  }
+  /* HP: tampilkan menu 2 kolom biar tidak banyak scroll */
+  @media (max-width:640px){
+    .menu-grid{grid-template-columns:repeat(2,1fr);gap:12px}
+    .p-media{height:128px}
+    .p-info{padding:11px 11px 13px}
+    .p-name{font-size:13.5px;line-height:1.25}
+    .p-price{font-size:14px}
+    .p-badges{gap:5px;margin-top:8px}
+    .p-best,.p-habis{font-size:9.5px;padding:3px 7px}
+    .p-order{margin-top:12px;padding:10px 0;font-size:12.5px}
+    .p-qty{margin-top:12px;padding:5px;gap:6px}
+    .p-qty button{width:32px;height:32px;font-size:17px}
+    .p-qnum{font-size:12px;min-width:auto}
+    .p-cat{font-size:10px;padding:3px 8px;top:9px;left:9px}
+    .menu-title{font-size:clamp(30px,8vw,44px)}
   }
   @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 
