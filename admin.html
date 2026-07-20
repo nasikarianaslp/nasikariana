@@ -634,6 +634,15 @@
     font-size:14px;font-family:inherit;color:var(--ink);outline:none;resize:vertical;line-height:1.5;min-height:76px}
   .fld textarea:focus{border-color:var(--amber-400);background:#fff}
 
+  /* status toko (Operasional) */
+  .op-status{display:flex;gap:8px;flex-wrap:wrap}
+  .op-status button{flex:1;min-width:130px;border:1.5px solid var(--line);background:var(--yellow-50);border-radius:11px;
+    padding:11px 8px;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;transition:.15s}
+  .op-status button.on{color:#fff;border-color:transparent}
+  .op-status button[data-val="auto"].on{background:linear-gradient(135deg,var(--red-600),var(--red-700))}
+  .op-status button[data-val="buka"].on{background:linear-gradient(135deg,#37c26b,#1f9e52)}
+  .op-status button[data-val="tutup"].on{background:linear-gradient(135deg,#e0555f,#c0182a);color:#fff}
+
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -971,6 +980,15 @@
         <div class="grid-2">
           <div class="fld"><label for="opJamBuka">&#127749; Jam Buka</label><input id="opJamBuka" type="number" min="0" max="23" placeholder="10"><div class="op-hint">Format 24 jam (0–23).</div></div>
           <div class="fld"><label for="opJamTutup">&#127747; Jam Tutup</label><input id="opJamTutup" type="number" min="0" max="23" placeholder="22"><div class="op-hint">Status Buka/Tutup otomatis.</div></div>
+        </div>
+        <div class="fld">
+          <label>&#128680; Status Toko Saat Ini</label>
+          <div class="op-status" id="opStatus">
+            <button type="button" data-val="auto" class="on">&#128336; Otomatis (ikut jam)</button>
+            <button type="button" data-val="buka">&#128994; Paksa Buka</button>
+            <button type="button" data-val="tutup">&#128308; Tutup Sementara</button>
+          </div>
+          <div class="op-hint">Pakai "Tutup Sementara" kalau mendadak tidak buka — pelanggan akan melihat toko sedang tutup, walau masih dalam jam operasional.</div>
         </div>
 
         <div class="set-error" id="opMsg"></div>
@@ -2189,12 +2207,19 @@ document.getElementById('bell').addEventListener('click',()=>{
 });
 
 /* ---------- OPERASIONAL: Info Toko (halaman pelanggan) ---------- */
-const TOKO_DEF = { nama1:'Ana', nama2:'Nasi Kari', sejak:'2017', waTampil:'0813-639-5015', telepon:'0813-639-5015', alamat:'JLN. Teratai No. 42, Selatpanjang\nKabupaten Kepulauan Meranti, Riau', jamBuka:10, jamTutup:22 };
+const TOKO_DEF = { nama1:'Ana', nama2:'Nasi Kari', sejak:'2017', waTampil:'0813-639-5015', telepon:'0813-639-5015', alamat:'JLN. Teratai No. 42, Selatpanjang\nKabupaten Kepulauan Meranti, Riau', jamBuka:10, jamTutup:22, statusToko:'auto' };
+let opStatusVal = 'auto';
+function opSetStatus(v){
+  opStatusVal = v || 'auto';
+  document.querySelectorAll('#opStatus button').forEach(b=>b.classList.toggle('on', b.dataset.val===opStatusVal));
+}
+document.querySelectorAll('#opStatus button').forEach(b=>{ b.addEventListener('click',()=>opSetStatus(b.dataset.val)); });
 function opFill(d){
   $('opNama1').value=d.nama1||''; $('opNama2').value=d.nama2||'';
   $('opSejak').value=d.sejak||''; $('opTelp').value=d.telepon||'';
   $('opWa').value=d.waTampil||''; $('opAlamat').value=d.alamat||'';
   $('opJamBuka').value=(d.jamBuka!==undefined?d.jamBuka:''); $('opJamTutup').value=(d.jamTutup!==undefined?d.jamTutup:'');
+  opSetStatus(d.statusToko||'auto');
 }
 function opLoad(){
   $('opMsg').className='set-error';
@@ -2215,7 +2240,8 @@ $('opSave').addEventListener('click',async ()=>{
     waTampil:$('opWa').value.trim(),
     alamat:$('opAlamat').value.trim(),
     jamBuka:Number($('opJamBuka').value)||0,
-    jamTutup:Number($('opJamTutup').value)||0
+    jamTutup:Number($('opJamTutup').value)||0,
+    statusToko:opStatusVal
   };
   if(!sb){ setMsg(msg,'Supabase belum aktif, tidak bisa disimpan online.'); return; }
   setMsg(msg,'Menyimpan…',true);
