@@ -482,7 +482,7 @@
     <div class="wait-anim"><div class="wait-ring"></div><div class="wait-ic" id="waitIc">&#128338;</div></div>
     <h3 id="waitTitle">Pesanan Terkirim!</h3>
     <p id="waitMsg">Menunggu dikonfirmasi admin<span class="wait-dots"><span>.</span><span>.</span><span>.</span></span></p>
-    <div class="wait-note" id="waitNote">Kamu bisa memesan lagi setelah pesanan ini diproses oleh admin.</div>
+    <div class="wait-note" id="waitNote">Kamu bisa memesan lagi setelah pesanan ini selesai diproses oleh admin.</div>
     <button class="wait-btn" id="waitBtn" style="display:none">Pesan Lagi</button>
     <button class="wait-close" id="waitClose">Tutup sementara</button>
   </div>
@@ -657,18 +657,28 @@ function toast(msg){
 var orderPending = false;
 var pendingId = null;
 var waitTimer = null;
-function startWaiting(id){
-  pendingId = id; orderPending = true;
-  try { localStorage.setItem('toko_pending_order', id); } catch(e){}
+function showWaiting(st){
   var ov = $('waitOverlay');
   ov.classList.remove('done');
   $('waitIc').textContent = '\uD83D\uDD52';
-  $('waitTitle').textContent = 'Pesanan Terkirim!';
-  $('waitMsg').innerHTML = 'Menunggu dikonfirmasi admin<span class="wait-dots"><span>.</span><span>.</span><span>.</span></span>';
-  $('waitNote').style.display = '';
   $('waitBtn').style.display = 'none';
   $('waitClose').style.display = '';
-  ov.classList.add('show');
+  $('waitNote').style.display = '';
+  if(st === 'diproses'){
+    $('waitTitle').textContent = 'Pesanan Diproses!';
+    $('waitMsg').innerHTML = 'Pesananmu sedang dibuat oleh admin<span class="wait-dots"><span>.</span><span>.</span><span>.</span></span>';
+    $('waitNote').textContent = 'Mohon tunggu, pesanan sedang disiapkan. Kamu bisa memesan lagi setelah pesanan ini SELESAI.';
+  } else {
+    $('waitTitle').textContent = 'Pesanan Terkirim!';
+    $('waitMsg').innerHTML = 'Menunggu dikonfirmasi admin<span class="wait-dots"><span>.</span><span>.</span><span>.</span></span>';
+    $('waitNote').textContent = 'Kamu bisa memesan lagi setelah pesanan ini selesai diproses admin.';
+  }
+}
+function startWaiting(id){
+  pendingId = id; orderPending = true;
+  try { localStorage.setItem('toko_pending_order', id); } catch(e){}
+  $('waitOverlay').classList.add('show');
+  showWaiting('baru');
   pollPending();
   if(waitTimer) clearInterval(waitTimer);
   waitTimer = setInterval(pollPending, 4000);
@@ -678,18 +688,20 @@ function pollPending(){
   sb.from('pesanan').select('status').eq('id', pendingId).then(function(r){
     if(r.error) return;
     var row = r.data && r.data[0];
-    if(!row){ resolveWaiting('selesai'); return; }           // dihapus admin -> anggap selesai
-    if(row.status && row.status !== 'baru'){ resolveWaiting(row.status); }
+    if(!row){ finishWaiting(); return; }          // dihapus admin -> anggap selesai
+    var st = row.status || 'baru';
+    if(st === 'selesai'){ finishWaiting(); }
+    else { orderPending = true; showWaiting(st); } // baru / diproses -> tetap terkunci
   });
 }
-function resolveWaiting(status){
+function finishWaiting(){
   if(waitTimer){ clearInterval(waitTimer); waitTimer = null; }
   orderPending = false;
   var ov = $('waitOverlay');
   ov.classList.add('show','done');
   $('waitIc').textContent = '\u2713';
-  $('waitTitle').textContent = (status === 'selesai') ? 'Pesanan Selesai!' : 'Pesanan Diproses!';
-  $('waitMsg').textContent = (status === 'selesai') ? 'Terima kasih, pesananmu sudah selesai.' : 'Pesananmu sudah diterima & sedang disiapkan admin.';
+  $('waitTitle').textContent = 'Pesanan Selesai!';
+  $('waitMsg').textContent = 'Terima kasih! Pesananmu sudah selesai. Silakan pesan lagi kapan saja.';
   $('waitNote').style.display = 'none';
   $('waitBtn').style.display = '';
   $('waitClose').style.display = 'none';
@@ -934,8 +946,8 @@ loadMenusOnline(); // lalu ambil dari database online + pantau perubahan realtim
   pendingId=id;
   sb.from('pesanan').select('status').eq('id',id).then(function(r){
     var row = r.data && r.data[0];
-    if(!row || (row.status && row.status!=='baru')){ clearPending(); }
-    else { startWaiting(id); }
+    if(!row || row.status==='selesai'){ clearPending(); }
+    else { startWaiting(id); }   // baru / diproses -> tetap menunggu
   });
 })();
 
