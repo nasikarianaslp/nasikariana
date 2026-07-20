@@ -937,7 +937,28 @@
       </div>
     </section>
     <section class="page" id="page-role">
-      <div class="content"><div class="empty"><div class="badge">&#128101;</div><h3>Belum ada data operasional</h3><p>Halaman Operasional akan dikembangkan pada tahap berikutnya.</p></div></div>
+      <div class="panel set-card" style="max-width:640px">
+        <div class="set-head">
+          <h2>Info Toko (Halaman Pelanggan)</h2>
+          <p>Ubah data yang tampil di halaman pelanggan (bagian "Informasi Toko Makan" &amp; footer). Perubahan langsung berlaku tanpa perlu edit kode.</p>
+        </div>
+        <div class="grid-2">
+          <div class="fld"><label for="opNama1">Nama Toko (bagian merah)</label><input id="opNama1" type="text" placeholder="Ana"></div>
+          <div class="fld"><label for="opNama2">Nama Toko (bagian emas)</label><input id="opNama2" type="text" placeholder="Nasi Kari"></div>
+        </div>
+        <div class="grid-2">
+          <div class="fld"><label for="opSejak">Tahun Berdiri (Since)</label><input id="opSejak" type="text" placeholder="2017"></div>
+          <div class="fld"><label for="opTelp">Nomor Telepon</label><input id="opTelp" type="text" placeholder="0813-639-5015"></div>
+        </div>
+        <div class="fld"><label for="opWa">Nomor WhatsApp</label><input id="opWa" type="text" placeholder="0813-639-5015"></div>
+        <div class="fld"><label for="opAlamat">Alamat</label><textarea id="opAlamat" rows="3" placeholder="Nama jalan, no, kota..."></textarea></div>
+        <div class="grid-2">
+          <div class="fld"><label for="opJamBuka">Jam Buka (0–23)</label><input id="opJamBuka" type="number" min="0" max="23" placeholder="10"></div>
+          <div class="fld"><label for="opJamTutup">Jam Tutup (0–23)</label><input id="opJamTutup" type="number" min="0" max="23" placeholder="22"></div>
+        </div>
+        <div class="set-error" id="opMsg"></div>
+        <button class="set-save" id="opSave">Simpan Perubahan</button>
+      </div>
     </section>
     <section class="page" id="page-pengaturan">
       <!-- Kartu 1: Username -->
@@ -2149,6 +2170,44 @@ document.querySelector('.nav-item[data-page="wa"]').addEventListener('click',()=
 document.getElementById('bell').addEventListener('click',()=>{
   document.querySelector('.nav-item[data-page="wa"]').click();
 });
+
+/* ---------- OPERASIONAL: Info Toko (halaman pelanggan) ---------- */
+const TOKO_DEF = { nama1:'Ana', nama2:'Nasi Kari', sejak:'2017', waTampil:'0813-639-5015', telepon:'0813-639-5015', alamat:'JLN. Teratai No. 42, Selatpanjang\nKabupaten Kepulauan Meranti, Riau', jamBuka:10, jamTutup:22 };
+function opFill(d){
+  $('opNama1').value=d.nama1||''; $('opNama2').value=d.nama2||'';
+  $('opSejak').value=d.sejak||''; $('opTelp').value=d.telepon||'';
+  $('opWa').value=d.waTampil||''; $('opAlamat').value=d.alamat||'';
+  $('opJamBuka').value=(d.jamBuka!==undefined?d.jamBuka:''); $('opJamTutup').value=(d.jamTutup!==undefined?d.jamTutup:'');
+}
+function opLoad(){
+  $('opMsg').className='set-error';
+  if(!sb){ opFill(TOKO_DEF); return; }
+  sb.from('pengaturan').select('data').eq('id','toko').then(r=>{
+    if(r.error){ console.warn('Muat pengaturan:', r.error.message); opFill(TOKO_DEF); return; }
+    const row = r.data && r.data[0];
+    opFill(row && row.data ? Object.assign({}, TOKO_DEF, row.data) : TOKO_DEF);
+  });
+}
+$('opSave').addEventListener('click',async ()=>{
+  const msg=$('opMsg');
+  const data={
+    nama1:$('opNama1').value.trim()||'Ana',
+    nama2:$('opNama2').value.trim()||'Nasi Kari',
+    sejak:$('opSejak').value.trim(),
+    telepon:$('opTelp').value.trim(),
+    waTampil:$('opWa').value.trim(),
+    alamat:$('opAlamat').value.trim(),
+    jamBuka:Number($('opJamBuka').value)||0,
+    jamTutup:Number($('opJamTutup').value)||0
+  };
+  if(!sb){ setMsg(msg,'Supabase belum aktif, tidak bisa disimpan online.'); return; }
+  setMsg(msg,'Menyimpan…',true);
+  const r=await sb.from('pengaturan').upsert({id:'toko', data:data}).select();
+  if(r.error){ setMsg(msg,'Gagal: '+r.error.message); return; }
+  setMsg(msg,'Tersimpan! Halaman pelanggan akan mengikuti data ini.',true);
+  toast('Info toko diperbarui');
+});
+document.querySelector('.nav-item[data-page="role"]').addEventListener('click',opLoad);
 
 /* ---------- Init ---------- */
 loadCreds();
