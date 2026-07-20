@@ -216,11 +216,13 @@
   /* ===== RESPONSIVE ===== */
   @media (max-width:900px){
     .layout{padding:10px;gap:10px}
-    .sidebar{width:70px;padding:16px 8px}
+    .sidebar{width:80px;padding:16px 6px}
     .brand-txt,.brand-sub,.nav-label,.nv-text,.user-meta{display:none}
     .brand{justify-content:center;padding:6px 0 16px}
-    .nav-item{justify-content:center;padding:13px 0}
+    .nav-item{flex-direction:column;gap:5px;justify-content:center;padding:11px 2px;position:relative}
+    .nav-item::after{content:attr(data-short);display:block;font-size:9.5px;font-weight:700;line-height:1.1;text-align:center;letter-spacing:.1px}
     .nav-item.active::before{display:none}
+    .nav-item .nav-dot{position:absolute;top:5px;right:14px;margin:0}
     .user-chip{justify-content:center;padding:8px}
   }
   @media (max-width:560px){
@@ -760,25 +762,25 @@
 
     <div class="nav-label">Menu</div>
     <nav class="nav" id="nav">
-      <button class="nav-item active" data-page="laporan" data-title="Laporan Penjualan" data-desc="Ringkasan dan grafik penjualan">
+      <button class="nav-item active" data-page="laporan" data-short="Laporan" data-title="Laporan Penjualan" data-desc="Ringkasan dan grafik penjualan">
         <span class="nv-icon">&#128200;</span><span class="nv-text">Laporan Penjualan</span>
       </button>
-      <button class="nav-item" data-page="daftar-menu" data-title="Daftar Menu" data-desc="Kelola semua menu makanan dan minuman">
+      <button class="nav-item" data-page="daftar-menu" data-short="Menu" data-title="Daftar Menu" data-desc="Kelola semua menu makanan dan minuman">
         <span class="nv-icon">&#127860;</span><span class="nv-text">Daftar Menu</span>
       </button>
-      <button class="nav-item" data-page="makan" data-title="Makan di Tempat" data-desc="Pesanan pelanggan yang makan di tempat">
+      <button class="nav-item" data-page="makan" data-short="Meja" data-title="Makan di Tempat" data-desc="Pesanan pelanggan yang makan di tempat">
         <span class="nv-icon">&#127869;</span><span class="nv-text">Makan di Tempat</span>
       </button>
-      <button class="nav-item" data-page="wa" data-title="Pesanan via WhatsApp" data-desc="Pesanan yang masuk lewat WhatsApp">
+      <button class="nav-item" data-page="wa" data-short="Pesanan" data-title="Pesanan via WhatsApp" data-desc="Pesanan yang masuk lewat WhatsApp">
         <span class="nv-icon"><svg width="17" height="17" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0 auto"><path fill="#25D366" d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.945C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 018.413 3.488 11.824 11.824 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24z"/><path fill="#fff" d="M12.05 21.785h-.005a9.87 9.87 0 01-5.03-1.378l-.36-.214-3.742.981.999-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.002-5.45 4.436-9.884 9.888-9.884a9.82 9.82 0 016.988 2.898 9.825 9.825 0 012.892 6.994c-.003 5.45-4.437 9.885-9.885 9.885m5.426-7.403c-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.148-.669.15-.198.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/></svg></span><span class="nv-text">Pesanan via WhatsApp</span><span class="nav-dot" id="waNavDot">0</span>
       </button>
-      <button class="nav-item" data-page="role" data-title="Operasional" data-desc="Pengaturan operasional toko">
+      <button class="nav-item" data-page="role" data-short="Operasi" data-title="Operasional" data-desc="Pengaturan operasional toko">
         <span class="nv-icon">&#128101;</span><span class="nv-text">Operasional</span>
       </button>
     </nav>
 
     <div class="side-bottom">
-      <button class="nav-item" data-page="pengaturan" data-title="Pengaturan" data-desc="Konfigurasi umum aplikasi">
+      <button class="nav-item" data-page="pengaturan" data-short="Atur" data-title="Pengaturan" data-desc="Konfigurasi umum aplikasi">
         <span class="nv-icon">&#9881;</span><span class="nv-text">Pengaturan</span>
       </button>
       <div class="user-chip">
