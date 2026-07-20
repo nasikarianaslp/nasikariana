@@ -2129,12 +2129,11 @@ function waBeep(){
 }
 function updateBell(){
   const dot=document.getElementById('bellDot'); if(!dot) return;
-  dot.textContent = waUnseen>9 ? '9+' : waUnseen;
-  dot.classList.toggle('show', waUnseen>0);
+  const baru = pesananWA.filter(p=>(p.status||'baru')==='baru').length;   // belum dikonfirmasi
+  dot.textContent = baru>9 ? '9+' : baru;
+  dot.classList.toggle('show', baru>0);
 }
 function notifyNewOrders(n){
-  waUnseen += n;
-  updateBell();
   const bell=document.getElementById('bell');
   if(bell){ bell.classList.remove('ring'); void bell.offsetWidth; bell.classList.add('ring'); }
   waBeep();
@@ -2176,6 +2175,7 @@ function waRender(){
   document.getElementById('waCount').textContent = pesananWA.length + ' pesanan masuk';
   const dot = document.getElementById('waNavDot');
   if(dot){ dot.textContent = baru; dot.classList.toggle('show', baru>0); }
+  updateBell();   // lonceng ikut menampilkan jumlah belum dikonfirmasi
 
   const rows = pesananWA.filter(p=> waFilterStatus==='semua' || (p.status||'baru')===waFilterStatus);
   if(rows.length===0){ list.innerHTML=''; empty.style.display=''; 
@@ -2230,7 +2230,7 @@ document.querySelectorAll('#waFilter button').forEach(b=>{
   });
 });
 document.getElementById('waRefresh').addEventListener('click',()=>{ waLoad(); toast('Pesanan dimuat ulang'); });
-document.querySelector('.nav-item[data-page="wa"]').addEventListener('click',()=>{ waUnseen=0; updateBell(); waLoad(); });
+document.querySelector('.nav-item[data-page="wa"]').addEventListener('click',()=>{ waLoad(); });
 /* klik lonceng -> buka halaman Pesanan via WhatsApp */
 document.getElementById('bell').addEventListener('click',()=>{
   document.querySelector('.nav-item[data-page="wa"]').click();
