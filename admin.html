@@ -688,6 +688,26 @@
   .opt-row .opt-del{width:34px;height:34px;flex-shrink:0;border:none;border-radius:9px;background:#fdecec;color:var(--red-600);cursor:pointer;font-size:15px}
   .opt-row .opt-del:hover{background:#fbdada}
 
+  /* ===== pilih ukuran & topping (makan di tempat) ===== */
+  .do-sec{margin-bottom:16px}
+  .do-sec-title{font-size:13px;font-weight:800;color:var(--red-700);margin-bottom:9px;display:flex;align-items:center;gap:7px}
+  .do-choice{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--yellow-50);border:1.5px solid #f2e2b8;border-radius:12px;padding:11px 14px;margin-bottom:8px;cursor:pointer}
+  .do-choice.sel{border-color:var(--red-500);background:#fff;box-shadow:0 0 0 2px rgba(158,23,32,.12)}
+  .do-left{display:flex;align-items:center;gap:11px}
+  .do-radio{width:19px;height:19px;border-radius:50%;border:2px solid #d9c3b3;flex-shrink:0;position:relative}
+  .do-choice.sel .do-radio{border-color:var(--red-600)}
+  .do-choice.sel .do-radio::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--red-600)}
+  .do-name{font-size:14px;font-weight:700;color:var(--ink)}
+  .do-price{font-size:13px;font-weight:800;color:var(--red-700)}
+  .do-top{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--yellow-50);border:1.5px solid #f2e2b8;border-radius:12px;padding:9px 14px;margin-bottom:8px}
+  .do-top .dt-price{font-size:12px;font-weight:700;color:#1f8f4c}
+  .do-step{display:flex;align-items:center;gap:9px}
+  .do-step button{width:30px;height:30px;border-radius:50%;border:none;cursor:pointer;font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center}
+  .do-step .dm{background:#fff;border:1.5px solid var(--line);color:var(--red-600)}
+  .do-step .dp{background:linear-gradient(135deg,var(--red-500),var(--red-700));color:#fff}
+  .do-step .dn{min-width:16px;text-align:center;font-weight:800}
+  .ord-opt{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -1272,6 +1292,21 @@
   </div>
 </div>
 
+<!-- ===== PILIH UKURAN & TOPPING (Makan di Tempat) ===== -->
+<div class="modal-overlay" id="dineOpt" style="z-index:75;align-items:center">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head">
+      <h3 id="dineOptTitle">Pilih Opsi</h3>
+      <button class="modal-x" id="dineOptClose">&times;</button>
+    </div>
+    <div class="modal-body" id="dineOptBody" style="max-height:60vh;overflow-y:auto"></div>
+    <div class="modal-foot" style="justify-content:space-between;align-items:center">
+      <div style="font-weight:800;color:var(--red-700)">Total: <span id="dineOptTotal">Rp 0</span></div>
+      <button class="btn-save" id="dineOptAdd">Tambah ke Pesanan</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ---------- Navigasi & filter segmented ---------- */
 const nav = document.querySelectorAll('.nav-item');
@@ -1803,19 +1838,75 @@ function renderPicker(q){
   if(menus.length===0){ list.innerHTML='<div class="picker-empty">Belum ada menu. Tambahkan dulu di halaman Daftar Menu.</div>'; return; }
   const avail=menus.filter(m=>m.status==='tersedia' && m.nama.toLowerCase().includes(q));
   if(avail.length===0){ list.innerHTML='<div class="picker-empty">Menu tidak ditemukan atau sedang habis.</div>'; return; }
-  list.innerHTML=avail.map(m=>`
+  list.innerHTML=avail.map(m=>{
+    const opt = dineHasOpt(m) ? ' data-opt="1"' : '';
+    const label = dineHasOpt(m) ? '\uD83C\uDF7D\uFE0F Pilih' : '+ Tambah';
+    return `
     <div class="pk-row">
       <div><div class="pk-name">${escapeHtml(m.nama)}</div><div class="pk-price">${rupiah(m.harga)}</div></div>
-      <button class="pk-add" data-add="${escapeHtml(m.nama)}" data-price="${m.harga}">+ Tambah</button>
-    </div>`).join('');
+      <button class="pk-add" data-add="${escapeHtml(String(m.id))}"${opt}>${label}</button>
+    </div>`;
+  }).join('');
 }
+function dineHasOpt(m){ return !!((m.varian && m.varian.length) || (m.topping && m.topping.length)); }
 document.getElementById('pickerList').addEventListener('click',e=>{
   const b=e.target.closest('[data-add]'); if(!b) return;
-  const nama=b.dataset.add, harga=Number(b.dataset.price);
-  const ex=dineOrder.find(x=>x.nama===nama);
-  if(ex) ex.qty++; else dineOrder.push({nama,harga,qty:1});
-  renderOrder();
+  const m=menus.find(x=>String(x.id)===b.dataset.add); if(!m) return;
+  if(dineHasOpt(m)){ openDineOpt(m); return; }
+  dinePush({nama:m.nama, harga:m.harga, qty:1, ukuran:'', topping:[], sig:'b'});
 });
+
+/* ---- modal opsi untuk makan di tempat ---- */
+let doMenu=null, doSizeIdx=0, doTopQ=[];
+function doUnit(){
+  const m=doMenu; if(!m) return 0;
+  const base=(m.varian&&m.varian.length)?m.varian[doSizeIdx].harga:m.harga;
+  const add=(m.topping||[]).reduce((s,t,i)=>s+t.harga*(doTopQ[i]||0),0);
+  return base+add;
+}
+function renderDoBody(){
+  const m=doMenu; let html='';
+  if(m.varian&&m.varian.length){
+    html+='<div class="do-sec"><div class="do-sec-title">\uD83C\uDF7D\uFE0F Pilih Ukuran</div>';
+    html+=m.varian.map((v,i)=>`<div class="do-choice${i===doSizeIdx?' sel':''}" data-size="${i}"><div class="do-left"><span class="do-radio"></span><span class="do-name">${escapeHtml(v.nama)}</span></div><span class="do-price">${rupiah(v.harga)}</span></div>`).join('');
+    html+='</div>';
+  }
+  if(m.topping&&m.topping.length){
+    html+='<div class="do-sec"><div class="do-sec-title">\uD83E\uDD5A Topping</div>';
+    html+=m.topping.map((t,i)=>`<div class="do-top"><div><div class="do-name">${escapeHtml(t.nama)}</div><div class="dt-price">+${rupiah(t.harga)}</div></div><div class="do-step"><button class="dm" data-tdec="${i}">&minus;</button><span class="dn" id="dtq${i}">${doTopQ[i]||0}</span><button class="dp" data-tinc="${i}">+</button></div></div>`).join('');
+    html+='</div>';
+  }
+  document.getElementById('dineOptBody').innerHTML=html;
+  document.getElementById('dineOptTotal').textContent=rupiah(doUnit());
+}
+function openDineOpt(m){
+  doMenu=m; doSizeIdx=0; doTopQ=(m.topping||[]).map(()=>0);
+  document.getElementById('dineOptTitle').textContent=m.nama;
+  renderDoBody();
+  document.getElementById('dineOpt').classList.add('open');
+}
+function closeDineOpt(){ document.getElementById('dineOpt').classList.remove('open'); doMenu=null; }
+document.getElementById('dineOptBody').addEventListener('click',e=>{
+  const s=e.target.closest('[data-size]'), ti=e.target.closest('[data-tinc]'), td=e.target.closest('[data-tdec]');
+  if(s){ doSizeIdx=+s.dataset.size; document.querySelectorAll('#dineOptBody .do-choice').forEach(c=>c.classList.toggle('sel',+c.dataset.size===doSizeIdx)); document.getElementById('dineOptTotal').textContent=rupiah(doUnit()); }
+  else if(ti){ const i=+ti.dataset.tinc; doTopQ[i]=(doTopQ[i]||0)+1; document.getElementById('dtq'+i).textContent=doTopQ[i]; document.getElementById('dineOptTotal').textContent=rupiah(doUnit()); }
+  else if(td){ const j=+td.dataset.tdec; if((doTopQ[j]||0)>0){ doTopQ[j]--; document.getElementById('dtq'+j).textContent=doTopQ[j]; document.getElementById('dineOptTotal').textContent=rupiah(doUnit()); } }
+});
+document.getElementById('dineOptClose').addEventListener('click',closeDineOpt);
+document.getElementById('dineOpt').addEventListener('click',e=>{ if(e.target.id==='dineOpt') closeDineOpt(); });
+document.getElementById('dineOptAdd').addEventListener('click',()=>{
+  const m=doMenu; if(!m) return;
+  const uk=(m.varian&&m.varian.length)?m.varian[doSizeIdx]:null;
+  const tops=(m.topping||[]).map((t,i)=>({nama:t.nama,harga:t.harga,qty:(doTopQ[i]||0)})).filter(t=>t.qty>0);
+  const sig=(uk?uk.nama:'')+'|'+tops.map(t=>t.nama+'x'+t.qty).join(',');
+  dinePush({nama:m.nama, harga:doUnit(), qty:1, ukuran:uk?uk.nama:'', topping:tops, sig:sig});
+  closeDineOpt();
+});
+function dinePush(item){
+  const ex=dineOrder.find(x=>x.nama===item.nama && (x.sig||'b')===item.sig);
+  if(ex) ex.qty++; else dineOrder.push(item);
+  renderOrder();
+}
 document.getElementById('pickerSearch').addEventListener('input',e=>renderPicker(e.target.value));
 
 function renderOrder(){
@@ -1824,14 +1915,20 @@ function renderOrder(){
   if(dineOrder.length===0){ wrap.innerHTML=''; empty.style.display=''; }
   else{
     empty.style.display='none';
-    wrap.innerHTML=dineOrder.map((x,idx)=>`
+    wrap.innerHTML=dineOrder.map((x,idx)=>{
+      let opt='';
+      if(x.ukuran) opt+='Ukuran: '+escapeHtml(x.ukuran);
+      if(x.topping&&x.topping.length) opt+=(opt?' \u00B7 ':'')+'Topping: '+x.topping.map(t=>escapeHtml(t.nama)+(t.qty>1?(' x'+t.qty):'')).join(', ');
+      const optHtml=opt?`<span class="ord-opt">${opt}</span>`:'';
+      return `
       <div class="ord-line">
-        <span class="ord-name">${escapeHtml(x.nama)}</span>
+        <span class="ord-name">${escapeHtml(x.nama)}${optHtml}</span>
         <div class="step">
           <button data-dec="${idx}">&minus;</button><span>${x.qty}</span><button data-inc="${idx}">+</button>
         </div>
         <span class="ord-sub">${rupiah(x.harga*x.qty)}</span>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   }
   document.getElementById('ordTotal').textContent=rupiah(dineOrder.reduce((s,x)=>s+x.harga*x.qty,0));
 }
@@ -1879,7 +1976,7 @@ document.getElementById('dinePayBtn').addEventListener('click',()=>{
     id:'o'+Date.now(), ts:Date.now(), source:'tempat', status:'selesai',
     meja:t.no, guests:Number(document.getElementById('dineGuests').value)||t.cap,
     bayar:document.getElementById('dinePay').value,
-    items:dineOrder.map(x=>({nama:x.nama,qty:x.qty,harga:x.harga}))
+    items:dineOrder.map(x=>({nama:x.nama,qty:x.qty,harga:x.harga,ukuran:x.ukuran||'',topping:x.topping||[]}))
   });
   saveOrders();
   tables[activeTable]={no:t.no,cap:t.cap,status:'kosong',guests:t.cap,items:[]};
