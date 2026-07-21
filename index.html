@@ -766,13 +766,12 @@ function startWaiting(id, data){
 }
 function pollPending(){
   if(!sb || !pendingId) return;
-  sb.from('pesanan').select('status').eq('id', pendingId).then(function(r){
-    if(r.error) return;
-    var row = r.data && r.data[0];
-    if(!row){ finishWaiting(); return; }          // dihapus admin -> anggap selesai
-    var st = row.status || 'baru';
+  sb.rpc('status_pesanan', { pid: pendingId }).then(function(r){
+    if(r.error){ console.warn('Cek status:', r.error.message); return; }
+    var st = r.data;                       // status saja (tanpa data pribadi)
+    if(st === null || st === undefined){ finishWaiting(); return; }  // dihapus -> selesai
     if(st === 'selesai'){ finishWaiting(); }
-    else { orderPending = true; showWaiting(st); } // baru / diproses -> tetap terkunci
+    else { orderPending = true; showWaiting(st); }
   });
 }
 function finishWaiting(){
@@ -1111,13 +1110,16 @@ loadMenusOnline(); // lalu ambil dari database online + pantau perubahan realtim
 /* pulihkan status menunggu jika masih ada pesanan yang belum diproses */
 (function(){
   if(!sb) return;
-  var id=null; try{ id=localStorage.getItem('toko_pending_order'); }catch(e){}
+  var id=null, data=null;
+  try{ id=localStorage.getItem('toko_pending_order'); }catch(e){}
+  try{ var d=localStorage.getItem('toko_pending_order_data'); if(d) data=JSON.parse(d); }catch(e){}
   if(!id) return;
   pendingId=id;
-  sb.from('pesanan').select('*').eq('id',id).then(function(r){
-    var row = r.data && r.data[0];
-    if(!row || row.status==='selesai'){ clearPending(); }
-    else { startWaiting(id, row); }   // baru / diproses -> tetap menunggu + rincian
+  sb.rpc('status_pesanan', { pid:id }).then(function(r){
+    if(r.error){ console.warn('Cek status:', r.error.message); return; }
+    var st=r.data;
+    if(st===null || st===undefined || st==='selesai'){ clearPending(); }
+    else { startWaiting(id, data); }   // rincian diambil dari perangkat (localStorage)
   });
 })();
 
