@@ -1716,9 +1716,29 @@ const repEls={
   compPct:document.getElementById('compPct')
 };
 
+/* Ubah pesanan WhatsApp (Supabase) ke bentuk yang dimengerti laporan */
+function waAsOrders(){
+  let arr;
+  try{ arr = pesananWA; }catch(e){ return []; }
+  if(!Array.isArray(arr)) return [];
+  return arr.map(p=>({
+    id:p.id,
+    ts:p.created_at ? new Date(p.created_at).getTime() : Date.now(),
+    source:'wa',
+    status:(p.status||'baru'),
+    items:(p.items||[]).map(it=>({
+      nama:it.nama,
+      qty:Number(it.qty)||0,
+      harga:Number(it.harga)||0
+    }))
+  }));
+}
+/* Semua sumber penjualan: makan di tempat + WhatsApp */
+function allOrders(){ return orders.concat(waAsOrders()); }
+
 function renderReport(){
   // filter periode dulu (untuk catatan sumber), lalu sumber
-  const byPeriod=orders.filter(o=>inPeriod(o.ts));
+  const byPeriod=allOrders().filter(o=>inPeriod(o.ts));
   const cntTempat=byPeriod.filter(o=>o.source==='tempat').length;
   const cntWa=byPeriod.filter(o=>o.source==='wa').length;
   repEls.note.textContent=`${cntTempat} makan di tempat \u00B7 ${cntWa} WA`;
@@ -2340,6 +2360,7 @@ function waRender(){
   const dot = document.getElementById('waNavDot');
   if(dot){ dot.textContent = baru; dot.classList.toggle('show', baru>0); }
   updateBell();   // lonceng ikut menampilkan jumlah belum dikonfirmasi
+  renderReport(); // laporan ikut terbarui saat pesanan WA masuk/berubah
 
   const rows = pesananWA.filter(p=> waFilterStatus==='semua' || (p.status||'baru')===waFilterStatus);
   if(rows.length===0){ list.innerHTML=''; empty.style.display=''; 
